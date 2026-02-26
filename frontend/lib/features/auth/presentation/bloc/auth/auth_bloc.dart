@@ -4,8 +4,9 @@ import 'package:youtogether/features/auth/domain/usecases/get_current_user_use_c
 import 'package:youtogether/features/auth/domain/usecases/login_use_case.dart';
 import 'package:youtogether/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:youtogether/features/auth/domain/usecases/refresh_token_use_case.dart';
-import 'package:youtogether/features/auth/presentation/bloc/auth_event.dart';
-import 'package:youtogether/features/auth/presentation/bloc/auth_state.dart';
+
+import 'auth_event.dart';
+import 'auth_state.dart';
 
 /// BLoC responsible for managing authentication state across the application.
 ///
@@ -76,8 +77,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         (user) => user != null ? emit(AuthState.authenticated(user: user)) : emit(const AuthState.unauthenticated()),
     );
   }
-  
+
+  // Token refresh (internal — triggered by Dio 401 interceptor)
   Future<void> _onRefreshTokenRequested(AuthTokenRefreshRequested event, Emitter<AuthState> emit) async {
-    
+    final result = await _refreshTokenUseCase(const NoParams());
+
+    result.fold(
+      // Refresh failed: force logout; the user must re-authenticate.
+          (failure) => emit(const AuthState.unauthenticated()),
+      // Refresh succeeded: no state transition; the interceptor retries the
+      // original request transparently.
+          (_) => null,
+    );
   }
 }

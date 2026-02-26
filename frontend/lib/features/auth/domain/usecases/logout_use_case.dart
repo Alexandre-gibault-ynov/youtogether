@@ -16,7 +16,7 @@ class LogoutUseCase extends UseCase<void, NoParams> {
 
   final IAuthRepository _repository;
 
-  LogoutUseCase(this._repository);
+  const LogoutUseCase(this._repository);
 
   @override
   Future<Either<Failure, void>> call(NoParams params) {

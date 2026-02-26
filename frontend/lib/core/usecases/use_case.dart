@@ -6,7 +6,7 @@ import '../error/failures.dart';
 /// Abstract base class for all use cases in the application.
 ///
 /// Each use case encapsulates a single application operation and is a
-/// callable class via [call].  The [Type] parameter is the success value type;
+/// callable class via [call].  The [T] parameter is the success value type;
 /// [Params] carries the input parameters.
 ///
 /// All concrete use cases must extend this class and implement [call].
@@ -18,12 +18,14 @@ import '../error/failures.dart';
 ///   Future<Either<Failure, UserEntity>> call(LoginParams params) async { ... }
 /// }
 /// ```
-abstract class UseCase<Type, Params> {
+abstract class UseCase<T, Params> {
+  const UseCase();
+
   /// Executes the use case with the given [params].
   ///
   /// Returns [Right<Failure, Type>] on success and [Left<Failure, Type>] on
   /// failure.  No exception escapes this boundary.
-  Future<Either<Failure, Type>> call(Params params);
+  Future<Either<Failure, T>> call(Params params);
 }
 
 /// Sentinel parameter type for use cases that require no input.

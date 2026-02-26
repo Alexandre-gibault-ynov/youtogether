@@ -16,8 +16,11 @@ part 'login_use_case.freezed.dart';
 @freezed
 abstract class LoginParams with _$LoginParams {
   const factory LoginParams({
+    /// User email address used as login credential.
     required String email,
-    required String password
+
+    /// Plain-text password to compare with the stored hashed password server-side.
+    required String password,
   }) = _LoginParams;
 }
 
@@ -37,7 +40,7 @@ class LoginUseCase extends UseCase<UserEntity, LoginParams> {
 
   final IAuthRepository _repository;
 
-  LoginUseCase(this._repository);
+  const LoginUseCase(this._repository);
 
   @override
   Future<Either<Failure, UserEntity>> call(LoginParams params) {

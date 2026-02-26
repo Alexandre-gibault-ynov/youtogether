@@ -17,7 +17,7 @@ import '../../../../core/error/failures.dart';
 class GetCurrentUserUseCase extends UseCase<UserEntity?, NoParams>{
   final IAuthRepository _repository;
 
-  GetCurrentUserUseCase(this._repository);
+  const GetCurrentUserUseCase(this._repository);
 
   @override
   Future<Either<Failure, UserEntity?>> call(NoParams params) {

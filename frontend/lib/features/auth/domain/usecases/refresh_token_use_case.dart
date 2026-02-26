@@ -18,7 +18,7 @@ import '../../../../core/error/failures.dart';
 class RefreshTokenUseCase extends UseCase<void, NoParams> {
   final IAuthRepository _repository;
 
-  RefreshTokenUseCase(this._repository);
+  const RefreshTokenUseCase(this._repository);
 
   @override
   Future<Either<Failure, void>> call(NoParams params) {
