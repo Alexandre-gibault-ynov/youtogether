@@ -15,6 +15,21 @@ import '../model/user_model.dart';
 /// - POST /auth/refresh
 /// - GET  /auth/me
 abstract class IAuthRemoteDatasource {
+  /// POST /auth/register
+  ///
+  /// Creates a new user account with [email], [password] and [username].
+  /// Returns a [UserModel] containing the user profile and session tokens
+  /// on success, establishing a session immediately.
+  ///
+  /// Throws [ServerException] with statusCode 409 when the email is already
+  /// in use, or 422 when the payload fails server-side schema validation.
+  /// Throws [NetworkException] when the device is offline.
+  Future<UserModel> register({
+    required String email,
+    required String password,
+    required String username,
+  });
+
   /// POST /auth/login
   ///
   /// Authenticates using [email] and [password].
@@ -46,7 +61,7 @@ abstract class IAuthRemoteDatasource {
 
   /// GET /auth/me
   ///
-  /// Requires a valid Authorization: Bearer <accessToken> header.
+  /// Requires a valid Authorization: `Bearer <accessToken>` header.
   /// Returns the [UserModel] of the currently authenticated user.
   ///
   /// Throws [AuthException] for HTTP 401 (token invalid or expired).

@@ -27,6 +27,23 @@ abstract class IAuthRepository {
     required String password,
   });
 
+  /// Creates a new registered user account.
+  ///
+  /// On success, persists the access and refresh tokens to local secure
+  /// storage and returns the newly created [UserEntity], establishing a
+  /// session immediately without requiring a separate login round-trip.
+  ///
+  /// Fails with [ValidationFailure] when the email is already in use
+  /// (HTTP 409 Conflict) or when the payload violates the API schema
+  /// (HTTP 422 Unprocessable Entity).
+  /// Fails with [NetworkFailure] when the device is offline.
+  /// Fails with [ServerFailure] for any other HTTP error.
+  Future<Either<Failure, UserEntity>> register({
+    required String email,
+    required String password,
+    required String username,
+  });
+
   /// Invalidates the current session and clears locally stored tokens.
   ///
   /// Posts a logout request to the API so that the refresh token is
