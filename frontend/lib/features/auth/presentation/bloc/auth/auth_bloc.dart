@@ -73,7 +73,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await _getCurrentUserUseCase(const NoParams());
 
     result.fold(
-        (failure) => emit(AuthState.failure(failure: failure)),
+        (failure) => emit(AuthState.unauthenticated()),
         (user) => user != null ? emit(AuthState.authenticated(user: user)) : emit(const AuthState.unauthenticated()),
     );
   }
