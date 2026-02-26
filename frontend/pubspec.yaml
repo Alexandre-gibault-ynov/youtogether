@@ -4,9 +4,10 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.10.7
+  sdk: ^3.11.0
 
 dependencies:
+  bloc_test: ^10.0.0
   either_dart: ^1.0.0
   equatable: ^2.0.8
   flutter:
