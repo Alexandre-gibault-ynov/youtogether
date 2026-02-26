@@ -32,6 +32,42 @@ class AuthRepositoryImpl implements IAuthRepository {
   }) : _remoteDatasource = remoteDataSource,
        _localDatasource = localDataSource;
 
+
+  @override
+  Future<Either<Failure, UserEntity>> register({required String email, required String password, required String username}) async {
+    try{
+      final userModel = await _remoteDatasource.register(
+        username: username,
+        email: email,
+        password: password,
+      );
+      await _persistToken(userModel);
+      return Right(userModel.toDomain());
+    } on ServerException catch (e) {
+      // HTTP 409 Conflict — email already in use.
+      if (e.statusCode == 409) {
+        return Left(
+          Failure.validation(
+            errors: {'email': 'This email address is already in use.'},
+          ),
+        );
+      }
+      // HTTP 422 Unprocessable Entity — schema validation failure.
+      if (e.statusCode == 422) {
+        return Left(
+          Failure.validation(
+            errors: {'form': e.message},
+          ),
+        );
+      }
+      return Left(Failure.server(statusCode: e.statusCode, message: e.message));
+    } on NetworkException {
+      return const Left(Failure.network());
+    } on CacheException catch (e) {
+      return Left(Failure.cache(message: e.message));
+    }
+  }
+
   @override
   Future<Either<Failure, UserEntity>> register({
     required String email,
