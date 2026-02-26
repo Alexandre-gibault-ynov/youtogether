@@ -45,6 +45,7 @@ sealed class Failure with _$Failure {
   const factory Failure.notFound() = NotFoundFailure;
 
   /// Input validation failed before reaching the server.
-  const factory Failure.validation({required Map<String, String> errors}) =
-      ValidationFailure;
+  const factory Failure.validation({
+    required Map<String, String> errors,
+  }) = ValidationFailure;
 }
