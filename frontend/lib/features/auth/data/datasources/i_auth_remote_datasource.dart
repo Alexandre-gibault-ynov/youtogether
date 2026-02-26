@@ -8,12 +8,6 @@ import '../model/user_model.dart';
 /// ([ServerException], [NetworkException], [AuthException]) on failure.
 /// No [Failure] objects are returned here; exception-to-failure conversion
 /// is the repository's responsibility.
-///
-/// All method signatures align strictly with the YouTogether API contract:
-/// - POST /auth/login
-/// - POST /auth/logout
-/// - POST /auth/refresh
-/// - GET  /auth/me
 abstract class IAuthRemoteDatasource {
   /// POST /auth/register
   ///
