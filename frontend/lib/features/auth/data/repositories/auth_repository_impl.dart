@@ -32,10 +32,13 @@ class AuthRepositoryImpl implements IAuthRepository {
   }) : _remoteDatasource = remoteDataSource,
        _localDatasource = localDataSource;
 
-
   @override
-  Future<Either<Failure, UserEntity>> register({required String email, required String password, required String username}) async {
-    try{
+  Future<Either<Failure, UserEntity>> register({
+    required String email,
+    required String password,
+    required String username,
+  }) async {
+    try {
       final userModel = await _remoteDatasource.register(
         username: username,
         email: email,
@@ -54,11 +57,7 @@ class AuthRepositoryImpl implements IAuthRepository {
       }
       // HTTP 422 Unprocessable Entity — schema validation failure.
       if (e.statusCode == 422) {
-        return Left(
-          Failure.validation(
-            errors: {'form': e.message},
-          ),
-        );
+        return Left(Failure.validation(errors: {'form': e.message}));
       }
       return Left(Failure.server(statusCode: e.statusCode, message: e.message));
     } on NetworkException {
@@ -69,9 +68,15 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
-  Future<Either<Failure, UserEntity>> login({required String email, required String password}) async {
+  Future<Either<Failure, UserEntity>> login({
+    required String email,
+    required String password,
+  }) async {
     try {
-      final userModel = await _remoteDatasource.login(email: email, password: password);
+      final userModel = await _remoteDatasource.login(
+        email: email,
+        password: password,
+      );
       await _persistToken(userModel);
       return Right(userModel.toDomain());
     } on AuthException catch (e) {
@@ -107,10 +112,12 @@ class AuthRepositoryImpl implements IAuthRepository {
   Future<Either<Failure, void>> refreshToken() async {
     try {
       final storedRefreshToken = await _localDatasource.getRefreshToken();
-      final tokenModel = await _remoteDatasource.refreshToken(storedRefreshToken);
+      final tokenModel = await _remoteDatasource.refreshToken(
+        storedRefreshToken,
+      );
       await _localDatasource.saveTokens(
-          accessToken: tokenModel.accessToken,
-          refreshToken: tokenModel.refreshToken,
+        accessToken: tokenModel.accessToken,
+        refreshToken: tokenModel.refreshToken,
       );
       return const Right(null);
     } on AuthException catch (e) {
@@ -157,9 +164,12 @@ class AuthRepositoryImpl implements IAuthRepository {
     final refreshToken = userModel.refreshToken;
     if (accessToken == null || refreshToken == null) {
       throw const CacheException(
-          message: 'API response is missing access token or refresh token.'
+        message: 'API response is missing access token or refresh token.',
       );
     }
-    await _localDatasource.saveTokens(accessToken: accessToken, refreshToken: refreshToken);
+    await _localDatasource.saveTokens(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
   }
 }

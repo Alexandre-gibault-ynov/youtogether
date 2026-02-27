@@ -18,7 +18,6 @@ part 'register_use_case.freezed.dart';
 /// the `username` column in the PostgreSQL schema.
 @freezed
 abstract class RegisterParams with _$RegisterParams {
-
   const factory RegisterParams({
     /// Display name shown in the UI and rooms.
     required String username,

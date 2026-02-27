@@ -3,11 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'user_entity.freezed.dart';
 
 /// Role of a user.
-enum UserRole {
-  authenticated,
-  viewer,
-}
-
+enum UserRole { authenticated, viewer }
 
 /// Domain entity representing an authenticated user.
 ///
@@ -30,7 +26,7 @@ abstract class UserEntity with _$UserEntity {
     required String displayName,
 
     /// Role determining the user's features accessibility.
-    required  UserRole role,
+    required UserRole role,
 
     /// UTC timestamp of account creation.
     required DateTime createdAt,

@@ -32,10 +32,7 @@ abstract class IAuthRemoteDatasource {
   /// Throws [ServerException] for HTTP 4xx/5xx responses.
   /// Throws [AuthException] specifically for HTTP 401.
   /// Throws [NetworkException] when the device is offline.
-  Future<UserModel> login({
-    required String email,
-    required String password,
-  });
+  Future<UserModel> login({required String email, required String password});
 
   /// POST /auth/logout
   ///

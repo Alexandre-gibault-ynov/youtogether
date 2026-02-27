@@ -97,8 +97,9 @@ void main() {
       'TC-01: emits [loading, authenticated] when login succeeds',
       build: buildBloc,
       setUp: () {
-        when(() => mockLogin(any()))
-            .thenAnswer((_) async => Right(_tUserEntity));
+        when(
+          () => mockLogin(any()),
+        ).thenAnswer((_) async => Right(_tUserEntity));
       },
       act: (bloc) => bloc.add(
         const AuthEvent.loginRequested(email: _tEmail, password: _tPassword),
@@ -117,8 +118,9 @@ void main() {
       'TC-02: emits [loading, failure] when login returns AuthFailure',
       build: buildBloc,
       setUp: () {
-        when(() => mockLogin(any()))
-            .thenAnswer((_) async => const Left(_tAuthFailure));
+        when(
+          () => mockLogin(any()),
+        ).thenAnswer((_) async => const Left(_tAuthFailure));
       },
       act: (bloc) => bloc.add(
         const AuthEvent.loginRequested(email: _tEmail, password: _tPassword),
@@ -134,8 +136,9 @@ void main() {
       'emits [loading, failure] when login returns NetworkFailure',
       build: buildBloc,
       setUp: () {
-        when(() => mockLogin(any()))
-            .thenAnswer((_) async => const Left(_tNetworkFailure));
+        when(
+          () => mockLogin(any()),
+        ).thenAnswer((_) async => const Left(_tNetworkFailure));
       },
       act: (bloc) => bloc.add(
         const AuthEvent.loginRequested(email: _tEmail, password: _tPassword),
@@ -156,8 +159,9 @@ void main() {
       'TC-03: emits [loading, unauthenticated] when no valid session exists',
       build: buildBloc,
       setUp: () {
-        when(() => mockGetCurrentUser(any()))
-            .thenAnswer((_) async => const Right(null));
+        when(
+          () => mockGetCurrentUser(any()),
+        ).thenAnswer((_) async => const Right(null));
       },
       act: (bloc) => bloc.add(const AuthEvent.checkStatusRequested()),
       expect: () => [
@@ -170,8 +174,9 @@ void main() {
       'emits [loading, authenticated] when a valid session is restored',
       build: buildBloc,
       setUp: () {
-        when(() => mockGetCurrentUser(any()))
-          .thenAnswer((_) async => Right(_tUserEntity));
+        when(
+          () => mockGetCurrentUser(any()),
+        ).thenAnswer((_) async => Right(_tUserEntity));
       },
       act: (bloc) => bloc.add(const AuthEvent.checkStatusRequested()),
       expect: () => [
@@ -184,9 +189,9 @@ void main() {
       'emits [loading, unauthenticated] when getCurrentUser returns AuthFailure',
       build: buildBloc,
       setUp: () {
-        when(() => mockGetCurrentUser(any())).thenAnswer(
-          (_) async => const Right(null),
-        );
+        when(
+          () => mockGetCurrentUser(any()),
+        ).thenAnswer((_) async => const Right(null));
       },
       act: (bloc) => bloc.add(const AuthEvent.checkStatusRequested()),
       expect: () => [
@@ -205,8 +210,9 @@ void main() {
       'emits [loading, unauthenticated] when logout succeeds',
       build: buildBloc,
       setUp: () {
-        when(() => mockLogout(any()))
-          .thenAnswer((_) async => const Right(null));
+        when(
+          () => mockLogout(any()),
+        ).thenAnswer((_) async => const Right(null));
       },
       act: (bloc) => bloc.add(const AuthEvent.logoutRequested()),
       expect: () => [
@@ -225,8 +231,9 @@ void main() {
       'emits no state change when token refresh succeeds',
       build: buildBloc,
       setUp: () {
-        when(() => mockRefreshToken(any()))
-          .thenAnswer((_) async => const Right(null));
+        when(
+          () => mockRefreshToken(any()),
+        ).thenAnswer((_) async => const Right(null));
       },
       act: (bloc) => bloc.add(const AuthEvent.tokenRefreshRequested()),
       // No state change on successful refresh — the Dio interceptor retries.
@@ -238,7 +245,8 @@ void main() {
       build: buildBloc,
       setUp: () {
         when(() => mockRefreshToken(any())).thenAnswer(
-          (_) async => const Left(Failure.auth(message: 'Refresh token expired')),
+          (_) async =>
+              const Left(Failure.auth(message: 'Refresh token expired')),
         );
       },
       act: (bloc) => bloc.add(const AuthEvent.tokenRefreshRequested()),

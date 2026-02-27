@@ -41,7 +41,8 @@ abstract class UserModel with _$UserModel {
     @JsonKey(name: 'created_at') required DateTime createdAt,
   }) = _UserModel;
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      _$UserModelFromJson(json);
 }
 
 /// Extension providing domain conversion for [UserModel].
@@ -49,12 +50,11 @@ abstract class UserModel with _$UserModel {
 /// [toDomain] is the sole crossing point from the data layer into the domain.
 /// It maps raw API string values to typed domain enumerations and value objects.
 extension UserModelX on UserModel {
-  UserEntity toDomain() =>
-      UserEntity(
-        id: id,
-        email: email,
-        displayName: displayName,
-        role: role == 'registered' ? UserRole.authenticated : UserRole.viewer,
-        createdAt: createdAt,
-      );
+  UserEntity toDomain() => UserEntity(
+    id: id,
+    email: email,
+    displayName: displayName,
+    role: role == 'registered' ? UserRole.authenticated : UserRole.viewer,
+    createdAt: createdAt,
+  );
 }

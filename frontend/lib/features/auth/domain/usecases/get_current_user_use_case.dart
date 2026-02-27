@@ -14,7 +14,7 @@ import '../../../../core/error/failures.dart';
 /// This use case is dispatched on cold start via
 /// [AuthEvent.checkStatusRequested] to restore the session state without
 /// requiring the user to log in again.
-class GetCurrentUserUseCase extends UseCase<UserEntity?, NoParams>{
+class GetCurrentUserUseCase extends UseCase<UserEntity?, NoParams> {
   final IAuthRepository _repository;
 
   const GetCurrentUserUseCase(this._repository);

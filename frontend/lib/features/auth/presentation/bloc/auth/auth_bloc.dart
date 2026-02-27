@@ -21,7 +21,6 @@ import 'auth_state.dart';
 /// [Left<Failure, T>] values from the use cases and are mapped to
 /// [AuthState.failure].
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
   final GetCurrentUserUseCase _getCurrentUserUseCase;
@@ -43,51 +42,65 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthTokenRefreshRequested>(_onRefreshTokenRequested);
   }
 
-  Future<void> _onLoginRequested(AuthLoginRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onLoginRequested(
+    AuthLoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(const AuthState.loading());
 
     final result = await _loginUseCase(
       LoginParams(email: event.email, password: event.password),
     );
-    
+
     result.fold(
-        (failure) => emit(AuthState.failure(failure: failure)),
-        (user) => emit(AuthState.authenticated(user: user)),
+      (failure) => emit(AuthState.failure(failure: failure)),
+      (user) => emit(AuthState.authenticated(user: user)),
     );
   }
 
-  Future<void> _onLogoutRequested(AuthLogoutRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onLogoutRequested(
+    AuthLogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(const AuthState.loading());
 
     final result = await _logoutUseCase(const NoParams());
 
     result.fold(
-        (failure) => emit(AuthState.failure(failure: failure)),
-        (_) => emit(const AuthState.unauthenticated()),
+      (failure) => emit(AuthState.failure(failure: failure)),
+      (_) => emit(const AuthState.unauthenticated()),
     );
   }
 
-  Future<void> _onCheckStatusRequested(AuthCheckStatusRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onCheckStatusRequested(
+    AuthCheckStatusRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(const AuthState.loading());
-    
+
     final result = await _getCurrentUserUseCase(const NoParams());
 
     result.fold(
-        (failure) => emit(AuthState.unauthenticated()),
-        (user) => user != null ? emit(AuthState.authenticated(user: user)) : emit(const AuthState.unauthenticated()),
+      (failure) => emit(AuthState.unauthenticated()),
+      (user) => user != null
+          ? emit(AuthState.authenticated(user: user))
+          : emit(const AuthState.unauthenticated()),
     );
   }
 
   // Token refresh (internal — triggered by Dio 401 interceptor)
-  Future<void> _onRefreshTokenRequested(AuthTokenRefreshRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onRefreshTokenRequested(
+    AuthTokenRefreshRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     final result = await _refreshTokenUseCase(const NoParams());
 
     result.fold(
       // Refresh failed: force logout; the user must re-authenticate.
-          (failure) => emit(const AuthState.unauthenticated()),
+      (failure) => emit(const AuthState.unauthenticated()),
       // Refresh succeeded: no state transition; the interceptor retries the
       // original request transparently.
-          (_) => null,
+      (_) => null,
     );
   }
 }

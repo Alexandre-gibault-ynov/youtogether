@@ -1,5 +1,5 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'failures.freezed.dart';
 
@@ -45,7 +45,6 @@ sealed class Failure with _$Failure {
   const factory Failure.notFound() = NotFoundFailure;
 
   /// Input validation failed before reaching the server.
-  const factory Failure.validation({
-    required Map<String, String> errors,
-  }) = ValidationFailure;
+  const factory Failure.validation({required Map<String, String> errors}) =
+      ValidationFailure;
 }

@@ -39,9 +39,9 @@ abstract class IAuthRepository {
   /// Fails with [NetworkFailure] when the device is offline.
   /// Fails with [ServerFailure] for any other HTTP error.
   Future<Either<Failure, UserEntity>> register({
+    required String username,
     required String email,
     required String password,
-    required String username,
   });
 
   /// Invalidates the current session and clears locally stored tokens.

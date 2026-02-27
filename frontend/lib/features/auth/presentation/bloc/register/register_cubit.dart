@@ -13,12 +13,11 @@ import '../../../domain/usecases/register_use_case.dart';
 /// Separated from [AuthBloc] to respect the Single Responsibility Principle:
 /// registration is a distinct operation from session management.
 class RegisterCubit extends Cubit<RegisterState> {
-
   final RegisterUseCase _registerUseCase;
 
-  RegisterCubit({required RegisterUseCase registerUseCase}) :
-        _registerUseCase = registerUseCase,
-        super(const RegisterState.initial());
+  RegisterCubit({required RegisterUseCase registerUseCase})
+    : _registerUseCase = registerUseCase,
+      super(const RegisterState.initial());
 
   /// Submits a registration request with [email], [password] and [username].
   ///

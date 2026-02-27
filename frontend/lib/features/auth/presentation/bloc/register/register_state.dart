@@ -27,7 +27,6 @@ sealed class RegisterState with _$RegisterState {
   /// The last registration attempt failed.
   ///
   /// [failure] carries a typed [Failure] variant to be displayed in the UI.
-  const factory RegisterState.failure({
-    required Failure failure,
-  }) = RegisterFailureState;
+  const factory RegisterState.failure({required Failure failure}) =
+      RegisterFailureState;
 }

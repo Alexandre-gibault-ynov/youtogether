@@ -13,7 +13,6 @@ import '../repositories/i_auth_repository.dart';
 /// [AuthState.unauthenticated] on [Right] and to [AuthState.failure] on
 /// [Left].
 class LogoutUseCase extends UseCase<void, NoParams> {
-
   final IAuthRepository _repository;
 
   const LogoutUseCase(this._repository);

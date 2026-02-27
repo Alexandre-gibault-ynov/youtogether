@@ -35,9 +35,8 @@ sealed class AuthState with _$AuthState {
   ///
   /// The UI must navigate to the home screen and grant access to protected
   /// features.
-  const factory AuthState.authenticated({
-    required UserEntity user,
-  }) = AuthAuthenticated;
+  const factory AuthState.authenticated({required UserEntity user}) =
+      AuthAuthenticated;
 
   /// No valid session exists.
   ///
@@ -48,7 +47,6 @@ sealed class AuthState with _$AuthState {
   ///
   /// [failure] carries a typed [Failure] variant which the UI should
   /// display as an appropriate error message.
-  const factory AuthState.failure({
-    required Failure failure,
-  }) = AuthFailureState;
+  const factory AuthState.failure({required Failure failure}) =
+      AuthFailureState;
 }

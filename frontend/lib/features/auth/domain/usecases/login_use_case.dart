@@ -6,7 +6,6 @@ import '../../../../core/usecases/use_case.dart';
 import '../entities/user_entity.dart';
 import '../repositories/i_auth_repository.dart';
 
-
 part 'login_use_case.freezed.dart';
 
 /// Inputs paramters for [LoginUseCase]
@@ -37,16 +36,12 @@ abstract class LoginParams with _$LoginParams {
 /// - secure credential handling via the repository abstraction.
 /// - OWASP A07 — credentials are never logged or stored in plain text.
 class LoginUseCase extends UseCase<UserEntity, LoginParams> {
-
   final IAuthRepository _repository;
 
   const LoginUseCase(this._repository);
 
   @override
   Future<Either<Failure, UserEntity>> call(LoginParams params) {
-    return _repository.login(
-      email: params.email,
-      password: params.password,
-    );
+    return _repository.login(email: params.email, password: params.password);
   }
 }

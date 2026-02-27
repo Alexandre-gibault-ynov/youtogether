@@ -18,5 +18,6 @@ abstract class TokenModel with _$TokenModel {
     @JsonKey(name: 'refresh_token') required String refreshToken,
   }) = _TokenModel;
 
-  factory TokenModel.fromJson(Map<String, dynamic> json) => _$TokenModelFromJson(json);
+  factory TokenModel.fromJson(Map<String, dynamic> json) =>
+      _$TokenModelFromJson(json);
 }

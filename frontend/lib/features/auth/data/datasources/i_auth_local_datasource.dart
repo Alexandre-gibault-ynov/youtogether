@@ -14,8 +14,8 @@ abstract class IAuthLocalDatasource {
   ///
   /// Throws [CacheException] if the write operation fails.
   Future<void> saveTokens({
-  required String accessToken,
-  required String refreshToken,
+    required String accessToken,
+    required String refreshToken,
   });
 
   /// Returns the stored access token.
