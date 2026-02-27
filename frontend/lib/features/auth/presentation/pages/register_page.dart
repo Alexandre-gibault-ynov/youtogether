@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/app_theme.dart';
 import '../../../../core/error/failures.dart';
 import '../bloc/register/register_cubit.dart';
 import '../bloc/register/register_state.dart';
@@ -118,7 +119,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   Text(
                     'Création de compte',
                     textAlign: TextAlign.center,
-                    // style: AppTheme.displayTitle,
+                    style: AppTheme.displayTitle,
                   ),
                   const SizedBox(height: 24),
 
@@ -128,7 +129,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.next,
                     autocorrect: false,
-                    // style: AppTheme.body,
+                    style: AppTheme.body,
                     decoration: const InputDecoration(
                       hintText: "nom d'utilisateur",
                     ),
@@ -153,7 +154,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     textInputAction: TextInputAction.next,
                     autocorrect: false,
                     autofillHints: const [AutofillHints.newUsername],
-                    // style: AppTheme.body,
+                    style: AppTheme.body,
                     decoration: const InputDecoration(hintText: 'email'),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -176,7 +177,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.next,
                     autofillHints: const [AutofillHints.newPassword],
-                    // style: AppTheme.body,
+                    style: AppTheme.body,
                     decoration: InputDecoration(
                       hintText: 'mot de passe',
                       suffixIcon: IconButton(
@@ -185,7 +186,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
                           size: 20,
-                          // color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondary,
                         ),
                         tooltip: _obscurePassword
                             ? 'Afficher le mot de passe'
@@ -214,7 +215,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     textInputAction: TextInputAction.done,
                     autofillHints: const [AutofillHints.newPassword],
                     onFieldSubmitted: (_) => _onSubmit(),
-                    // style: AppTheme.body,
+                    style: AppTheme.body,
                     decoration: InputDecoration(
                       hintText: 'confirmer le mot de passe',
                       suffixIcon: IconButton(
@@ -223,7 +224,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
                           size: 20,
-                          // color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondary,
                         ),
                         tooltip: _obscureConfirm
                             ? 'Afficher le mot de passe'

@@ -4,6 +4,7 @@ import 'package:youtogether/core/error/failures.dart';
 import 'package:youtogether/features/auth/presentation/bloc/auth/auth_bloc.dart';
 import 'package:youtogether/features/auth/presentation/pages/register_page.dart';
 
+import '../../../../app/app_theme.dart';
 import '../bloc/auth/auth_event.dart';
 import '../bloc/auth/auth_state.dart';
 
@@ -119,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     'Connexion',
                     textAlign: TextAlign.center,
-                    // style: AppTheme.displayTitle,
+                    style: AppTheme.displayTitle,
                   ),
                   const SizedBox(height: 24),
 
@@ -130,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
                     textInputAction: TextInputAction.next,
                     autocorrect: false,
                     autofillHints: const [AutofillHints.email],
-                    // style: AppTheme.body,
+                    style: AppTheme.body,
                     decoration: const InputDecoration(hintText: 'email'),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -154,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                     textInputAction: TextInputAction.done,
                     autofillHints: const [AutofillHints.password],
                     onFieldSubmitted: (_) => _onSubmit(),
-                    // style: AppTheme.body,
+                    style: AppTheme.body,
                     decoration: InputDecoration(
                       hintText: 'mot de passe',
                       suffixIcon: IconButton(
@@ -217,7 +218,7 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     'Pas de compte ?',
                     textAlign: TextAlign.center,
-                    // style: AppTheme.caption,
+                    style: AppTheme.caption,
                   ),
                   const SizedBox(height: 10),
 
