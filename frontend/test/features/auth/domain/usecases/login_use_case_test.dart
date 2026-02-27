@@ -43,34 +43,31 @@ void main() {
   // Arrange helper — returns a successful login result.
   void arrangeLoginSuccess() {
     when(
-          () => mockRepository.login(email: _tEmail, password: _tPassword),
+      () => mockRepository.login(email: _tEmail, password: _tPassword),
     ).thenAnswer((_) async => Right(_tUserEntity));
   }
 
   group('LoginUseCase', () {
     group('call', () {
       // TC-01: happy path
-      test(
-          'returns Right(UserEntity) when repository login succeeds',
-        () {
-          () async {
-            //Arrange
-            arrangeLoginSuccess();
-            final params = LoginParams(email: _tEmail, password: _tPassword);
+      test('returns Right(UserEntity) when repository login succeeds', () {
+        () async {
+          //Arrange
+          arrangeLoginSuccess();
+          final params = LoginParams(email: _tEmail, password: _tPassword);
 
-            // Act
-            final result = await sut(params);
+          // Act
+          final result = await sut(params);
 
-            // Asserts
-            expect(result.isRight, isTrue);
-            expect(result.right, equals(_tUserEntity));
-            verify(
-              () => mockRepository.login(email: _tEmail, password: _tPassword),
-            ).called(1);
-            verifyNoMoreInteractions(mockRepository);
-          };
-        },
-      );
+          // Asserts
+          expect(result.isRight, isTrue);
+          expect(result.right, equals(_tUserEntity));
+          verify(
+            () => mockRepository.login(email: _tEmail, password: _tPassword),
+          ).called(1);
+          verifyNoMoreInteractions(mockRepository);
+        };
+      });
 
       // TC-02: invalid credentials
       test(
@@ -80,7 +77,8 @@ void main() {
           when(
             () => mockRepository.login(email: _tEmail, password: _tPassword),
           ).thenAnswer(
-            (_) async => const Left(Failure.auth(message: 'invalid credentials')),
+            (_) async =>
+                const Left(Failure.auth(message: 'invalid credentials')),
           );
           final params = LoginParams(email: _tEmail, password: _tPassword);
 
@@ -99,10 +97,8 @@ void main() {
         () async {
           // Arrange
           when(
-              () => mockRepository.login(email: _tEmail, password: _tPassword),
-          ).thenAnswer(
-              (_) async => const Left(Failure.network()),
-          );
+            () => mockRepository.login(email: _tEmail, password: _tPassword),
+          ).thenAnswer((_) async => const Left(Failure.network()));
           final params = LoginParams(email: _tEmail, password: _tPassword);
 
           // Act
@@ -129,8 +125,8 @@ void main() {
 
       // Assert
       verify(
-          () => mockRepository.login(email: _tEmail, password: _tPassword),
+        () => mockRepository.login(email: _tEmail, password: _tPassword),
       ).called(1);
-    }
+    },
   );
 }

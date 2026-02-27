@@ -51,11 +51,14 @@ void main() {
   late MockAuthRemoteDataSource mockRemote;
   late MockAuthLocalDataSource mockLocal;
   late AuthRepositoryImpl sut;
-  
+
   setUp(() {
     mockRemote = MockAuthRemoteDataSource();
     mockLocal = MockAuthLocalDataSource();
-    sut = AuthRepositoryImpl(remoteDataSource: mockRemote, localDataSource: mockLocal);
+    sut = AuthRepositoryImpl(
+      remoteDataSource: mockRemote,
+      localDataSource: mockLocal,
+    );
   });
 
   // Helper — stubs a successful token persistence.
@@ -98,7 +101,7 @@ void main() {
 
     test(
       'returns Left(AuthFailure) when the remote source throws AuthException',
-          () async {
+      () async {
         // Arrange
         when(
           () => mockRemote.login(email: _tEmail, password: _tPassword),
@@ -141,9 +144,12 @@ void main() {
       () async {
         // Arrange
         when(
-         () => mockRemote.login(email: _tEmail, password: _tPassword),
+          () => mockRemote.login(email: _tEmail, password: _tPassword),
         ).thenThrow(
-          const ServerException(statusCode: 500, message: 'Internal server error'),
+          const ServerException(
+            statusCode: 500,
+            message: 'Internal server error',
+          ),
         );
 
         // Act
@@ -158,26 +164,29 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // registerGroup()
+  // ---------------------------------------------------------------------------
+
+  registerGroup();
+
+  // ---------------------------------------------------------------------------
   // logout()
   // ---------------------------------------------------------------------------
 
   group('AuthRepositoryImpl.logout', () {
-    test(
-      'calls remote logout and clears local tokens on success',
-      () async {
-        // Arrange
-        when(() => mockRemote.logout()).thenAnswer((_) async {});
-        when(() => mockLocal.clearTokens()).thenAnswer((_) async {});
+    test('calls remote logout and clears local tokens on success', () async {
+      // Arrange
+      when(() => mockRemote.logout()).thenAnswer((_) async {});
+      when(() => mockLocal.clearTokens()).thenAnswer((_) async {});
 
-        // Act
-        final result = await sut.logout();
+      // Act
+      final result = await sut.logout();
 
-        // Assert
-        expect(result.isRight, isTrue);
-        verify(() => mockRemote.logout()).called(1);
-        verify(() => mockLocal.clearTokens()).called(1);
-      },
-    );
+      // Assert
+      expect(result.isRight, isTrue);
+      verify(() => mockRemote.logout()).called(1);
+      verify(() => mockLocal.clearTokens()).called(1);
+    });
 
     test(
       'still clears local tokens when the network is unavailable (offline logout)',
@@ -201,42 +210,41 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('AuthRepositoryImpl.refreshToken', () {
-    test(
-      'stores the new token pair when the refresh succeeds',
-      () async {
-        // Arrange
-        when(() => mockLocal.getRefreshToken())
-          .thenAnswer((_) async => _tRefreshToken);
-        when(() => mockRemote.refreshToken(_tRefreshToken))
-          .thenAnswer((_) async => _tTokenModel);
-        when(
-          () => mockLocal.saveTokens(
-            accessToken: _tTokenModel.accessToken,
-            refreshToken: _tTokenModel.refreshToken,
-          ),
-        ).thenAnswer((_) async {});
+    test('stores the new token pair when the refresh succeeds', () async {
+      // Arrange
+      when(
+        () => mockLocal.getRefreshToken(),
+      ).thenAnswer((_) async => _tRefreshToken);
+      when(
+        () => mockRemote.refreshToken(_tRefreshToken),
+      ).thenAnswer((_) async => _tTokenModel);
+      when(
+        () => mockLocal.saveTokens(
+          accessToken: _tTokenModel.accessToken,
+          refreshToken: _tTokenModel.refreshToken,
+        ),
+      ).thenAnswer((_) async {});
 
-        // Act
-        final result = await sut.refreshToken();
+      // Act
+      final result = await sut.refreshToken();
 
-        // Assert
-        expect(result.isRight, isTrue);
-        verify(
-          () => mockLocal.saveTokens(
-            accessToken: _tTokenModel.accessToken,
-            refreshToken: _tTokenModel.refreshToken,
-          ),
-        ).called(1);
-      },
-    );
+      // Assert
+      expect(result.isRight, isTrue);
+      verify(
+        () => mockLocal.saveTokens(
+          accessToken: _tTokenModel.accessToken,
+          refreshToken: _tTokenModel.refreshToken,
+        ),
+      ).called(1);
+    });
 
     test(
       'returns Left(CacheFailure) when no refresh token is stored locally',
       () async {
         // Arrange
-        when(() => mockLocal.getRefreshToken()).thenThrow(
-          const CacheException(message: 'No refresh token stored'),
-        );
+        when(
+          () => mockLocal.getRefreshToken(),
+        ).thenThrow(const CacheException(message: 'No refresh token stored'));
 
         // Act
         final result = await sut.refreshToken();
@@ -252,10 +260,12 @@ void main() {
       'returns Left(AuthFailure) when the refresh token is expired',
       () async {
         // Arrange
-        when(() => mockLocal.getRefreshToken())
-          .thenAnswer((_) async => _tRefreshToken);
-        when(() => mockRemote.refreshToken(_tRefreshToken))
-          .thenThrow(const AuthException(message: 'Refresh token expired'));
+        when(
+          () => mockLocal.getRefreshToken(),
+        ).thenAnswer((_) async => _tRefreshToken);
+        when(
+          () => mockRemote.refreshToken(_tRefreshToken),
+        ).thenThrow(const AuthException(message: 'Refresh token expired'));
 
         // Act
         final result = await sut.refreshToken();
@@ -272,21 +282,18 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('AuthRepositoryImpl.getCurrentUser', () {
-    test(
-      'returns Right(null) when no valid token is stored locally',
-      () async {
-        // Arrange
-        when(() => mockLocal.hasValidToken()).thenAnswer((_) async => false);
+    test('returns Right(null) when no valid token is stored locally', () async {
+      // Arrange
+      when(() => mockLocal.hasValidToken()).thenAnswer((_) async => false);
 
-        // Act
-        final result = await sut.getCurrentUser();
+      // Act
+      final result = await sut.getCurrentUser();
 
-        // Assert
-        expect(result.isRight, isTrue);
-        expect(result.right, isNull);
-        verifyNever(() => mockRemote.getCurrentUser());
-      },
-    );
+      // Assert
+      expect(result.isRight, isTrue);
+      expect(result.right, isNull);
+      verifyNever(() => mockRemote.getCurrentUser());
+    });
 
     test(
       'returns Right(UserEntity) when a valid token exists and the API succeeds',
@@ -300,7 +307,9 @@ void main() {
           createdAt: _tUserModel.createdAt,
         );
         when(() => mockLocal.hasValidToken()).thenAnswer((_) async => true);
-        when(() => mockRemote.getCurrentUser()).thenAnswer((_) async => meModel);
+        when(
+          () => mockRemote.getCurrentUser(),
+        ).thenAnswer((_) async => meModel);
 
         // Act
         final result = await sut.getCurrentUser();
@@ -310,5 +319,194 @@ void main() {
         expect(result.right, isA<UserEntity>());
       },
     );
+  });
+}
+
+// ---------------------------------------------------------------------------
+// register() — appended group
+// ---------------------------------------------------------------------------
+
+void registerGroup() {
+  // Shared setup — mirrors the outer test file setUp().
+  late MockAuthRemoteDataSource mockRemote;
+  late MockAuthLocalDataSource mockLocal;
+  late AuthRepositoryImpl sut;
+
+  setUp(() {
+    mockRemote = MockAuthRemoteDataSource();
+    mockLocal = MockAuthLocalDataSource();
+    sut = AuthRepositoryImpl(
+      remoteDataSource: mockRemote,
+      localDataSource: mockLocal,
+    );
+  });
+
+  const tUsername = 'Alice';
+
+  final tRegisterModel = UserModel(
+    id: '00000000-0000-0000-0000-000000000002',
+    email: _tEmail,
+    displayName: tUsername,
+    role: 'registered',
+    accessToken: _tAccessToken,
+    refreshToken: _tRefreshToken,
+    createdAt: DateTime.utc(2025, 1, 1),
+  );
+
+  group('AuthRepositoryImpl.register', () {
+    test(
+      'returns Right(UserEntity) and persists tokens on successful API response',
+      () async {
+        // Arrange
+        when(
+          () => mockRemote.register(
+            email: _tEmail,
+            password: _tPassword,
+            username: tUsername,
+          ),
+        ).thenAnswer((_) async => tRegisterModel);
+        when(
+          () => mockLocal.saveTokens(
+            accessToken: _tAccessToken,
+            refreshToken: _tRefreshToken,
+          ),
+        ).thenAnswer((_) async {});
+
+        // Act
+        final result = await sut.register(
+          email: _tEmail,
+          password: _tPassword,
+          username: tUsername,
+        );
+
+        // Assert
+        expect(result.isRight, isTrue);
+        expect(result.right, isA<UserEntity>());
+        verify(
+          () => mockLocal.saveTokens(
+            accessToken: _tAccessToken,
+            refreshToken: _tRefreshToken,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'returns Left(ValidationFailure) with email key on HTTP 409',
+      () async {
+        // Arrange
+        when(
+          () => mockRemote.register(
+            email: _tEmail,
+            password: _tPassword,
+            username: tUsername,
+          ),
+        ).thenThrow(
+          const ServerException(
+            statusCode: 409,
+            message: 'Email already in use',
+          ),
+        );
+
+        // Act
+        final result = await sut.register(
+          email: _tEmail,
+          password: _tPassword,
+          username: tUsername,
+        );
+
+        // Assert
+        expect(result.isLeft, isTrue);
+        final failure = result.left as ValidationFailure;
+        expect(failure.errors, containsPair('email', isNotEmpty));
+        verifyNever(
+          () => mockLocal.saveTokens(
+            accessToken: any(named: 'accessToken'),
+            refreshToken: any(named: 'refreshToken'),
+          ),
+        );
+      },
+    );
+
+    test('returns Left(ValidationFailure) with form key on HTTP 422', () async {
+      // Arrange
+      when(
+        () => mockRemote.register(
+          email: _tEmail,
+          password: _tPassword,
+          username: tUsername,
+        ),
+      ).thenThrow(
+        const ServerException(
+          statusCode: 422,
+          message: 'Username must be at least 3 characters.',
+        ),
+      );
+
+      // Act
+      final result = await sut.register(
+        email: _tEmail,
+        password: _tPassword,
+        username: tUsername,
+      );
+
+      // Assert
+      expect(result.isLeft, isTrue);
+      final failure = result.left as ValidationFailure;
+      expect(failure.errors, containsPair('form', isNotEmpty));
+    });
+
+    test(
+      'returns Left(NetworkFailure) when the remote source throws NetworkException',
+      () async {
+        // Arrange
+        when(
+          () => mockRemote.register(
+            email: _tEmail,
+            password: _tPassword,
+            username: tUsername,
+          ),
+        ).thenThrow(const NetworkException());
+
+        // Act
+        final result = await sut.register(
+          email: _tEmail,
+          password: _tPassword,
+          username: tUsername,
+        );
+
+        // Assert
+        expect(result.isLeft, isTrue);
+        expect(result.left, isA<NetworkFailure>());
+      },
+    );
+
+    test('returns Left(ServerFailure) on unexpected HTTP 5xx error', () async {
+      // Arrange
+      when(
+        () => mockRemote.register(
+          email: _tEmail,
+          password: _tPassword,
+          username: tUsername,
+        ),
+      ).thenThrow(
+        const ServerException(
+          statusCode: 500,
+          message: 'Internal server error',
+        ),
+      );
+
+      // Act
+      final result = await sut.register(
+        email: _tEmail,
+        password: _tPassword,
+        username: tUsername,
+      );
+
+      // Assert
+      expect(result.isLeft, isTrue);
+      final failure = result.left as ServerFailure;
+      expect(failure.statusCode, equals(500));
+    });
   });
 }

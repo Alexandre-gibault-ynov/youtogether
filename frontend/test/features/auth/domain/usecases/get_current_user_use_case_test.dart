@@ -11,7 +11,6 @@ import 'package:youtogether/features/auth/domain/usecases/get_current_user_use_c
 // Test doubles
 // ---------------------------------------------------------------------------
 
-
 class MockAuthRepository extends Mock implements IAuthRepository {}
 
 // ---------------------------------------------------------------------------
@@ -42,57 +41,53 @@ void main() {
   group('GetCurrentUserTestCase', () {
     group('call', () {
       // TC-01 derived: authenticated user
-      test(
-          'returns Right(UserEntity) when active session exists',
-              () async {
-            // Arrange
-            when(() => mockRepository.getCurrentUser())
-                .thenAnswer((_) async => Right(_tUserEntity));
+      test('returns Right(UserEntity) when active session exists', () async {
+        // Arrange
+        when(
+          () => mockRepository.getCurrentUser(),
+        ).thenAnswer((_) async => Right(_tUserEntity));
 
-            // Act
-            final result = await sut(const NoParams());
+        // Act
+        final result = await sut(const NoParams());
 
-            // Assert
-            expect(result.isRight, isTrue);
-            expect(result.right, equals(_tUserEntity));
-            verify(() => mockRepository.getCurrentUser()).called(1);
-            verifyNoMoreInteractions(mockRepository);
-          }
-      );
+        // Assert
+        expect(result.isRight, isTrue);
+        expect(result.right, equals(_tUserEntity));
+        verify(() => mockRepository.getCurrentUser()).called(1);
+        verifyNoMoreInteractions(mockRepository);
+      });
 
       // TC-03: unauthenticated — null returned inside Right
+      test('returns Right(null) when no valid session exists', () async {
+        // Arrange
+        when(
+          () => mockRepository.getCurrentUser(),
+        ).thenAnswer((_) async => Right(null));
+
+        // Act
+        final result = await sut(const NoParams());
+
+        // Assert
+        expect(result.isRight, isTrue);
+        expect(result.right, isNull);
+      });
+
+      // AuthFailure propagation
       test(
-        'returns Right(null) when no valid session exists',
-            () async {
+        'returns Left(AuthFailure) when the stored token is invalid',
+        () async {
           // Arrange
-          when(() => mockRepository.getCurrentUser(),)
-              .thenAnswer((_) async => Right(null));
+          when(() => mockRepository.getCurrentUser()).thenAnswer(
+            (_) async => Left(Failure.auth(message: 'Token expired')),
+          );
 
           // Act
           final result = await sut(const NoParams());
 
           // Assert
-          expect(result.isRight, isTrue);
-          expect(result.right, isNull);
+          expect(result.isLeft, isTrue);
+          expect(result.left, isA<AuthFailure>());
         },
-      );
-
-      // AuthFailure propagation
-      test(
-          'returns Left(AuthFailure) when the stored token is invalid',
-              () async {
-            // Arrange
-            when(() => mockRepository.getCurrentUser())
-                .thenAnswer((_) async => Left(Failure.auth(message: 'Token expired')),
-            );
-
-            // Act
-            final result = await sut(const NoParams());
-
-            // Assert
-            expect(result.isLeft, isTrue);
-            expect(result.left, isA<AuthFailure>());
-          }
       );
     });
   });
