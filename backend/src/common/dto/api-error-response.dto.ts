@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
  * Swagger schema class mirroring {@link ErrorResponseBody}.
  *
  * Used exclusively as an `@ApiResponse({ type: ... })` argument so that
- * Swagger UI displays the normalised error envelope for every endpoint.
+ * Swagger UI displays the normalized error envelope for every endpoint.
  * It is never instantiated at runtime.
  */
 export class ApiErrorResponseDto {

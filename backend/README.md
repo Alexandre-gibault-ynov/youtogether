@@ -9,13 +9,13 @@
 NestJS authentication module for the YouTogether backend. Exposes the
 five endpoints consumed by the Flutter `IAuthRemoteDataSource`:
 
-| Method | Path               | Guard          | Description                          |
-|--------|--------------------|----------------|--------------------------------------|
-| POST   | /api/auth/register | `@Public`      | Create account and issue token pair  |
-| POST   | /api/auth/login    | `LocalAuth`    | Validate credentials and issue tokens|
-| POST   | /api/auth/logout   | `JwtAuth`      | Invalidate refresh token server-side |
-| POST   | /api/auth/refresh  | `JwtRefresh`   | Rotate token pair                    |
-| GET    | /api/auth/me       | `JwtAuth`      | Return authenticated user profile    |
+| Method | Path               | Guard        | Description                           |
+|--------|--------------------|--------------|---------------------------------------|
+| POST   | /api/auth/register | `@Public`    | Create account and issue token pair   |
+| POST   | /api/auth/login    | `LocalAuth`  | Validate credentials and issue tokens |
+| POST   | /api/auth/logout   | `JwtAuth`    | Invalidate refresh token server-side  |
+| POST   | /api/auth/refresh  | `JwtRefresh` | Rotate token pair                     |
+| GET    | /api/auth/me       | `JwtAuth`    | Return authenticated user profile     |
 
 ---
 
@@ -80,14 +80,14 @@ test/
 ### Typed configuration namespaces
 
 Environment variables are not accessed directly via `process.env` or raw
-`ConfigService.get('KEY')` string lookups outside of the configuration
+`ConfigService.get('KEY')` string lookups outside the configuration
 files themselves. Each concern is encapsulated in a `registerAs` namespace:
 
-| Namespace  | Token constant       | Interface          | Consumers                                    |
-|------------|----------------------|--------------------|----------------------------------------------|
-| `app`      | `appConfig.KEY`      | `AppConfig`        | `main.ts`                                    |
-| `database` | `databaseConfig.KEY` | `DatabaseConfig`   | `AppModule` (TypeORM wiring)                 |
-| `jwt`      | `jwtConfig.KEY`      | `JwtConfig`        | `AuthService`, `JwtStrategy`, `JwtRefreshStrategy` |
+| Namespace  | Token constant       | Interface        | Consumers                                          |
+|------------|----------------------|------------------|----------------------------------------------------|
+| `app`      | `appConfig.KEY`      | `AppConfig`      | `main.ts`                                          |
+| `database` | `databaseConfig.KEY` | `DatabaseConfig` | `AppModule` (TypeORM wiring)                       |
+| `jwt`      | `jwtConfig.KEY`      | `JwtConfig`      | `AuthService`, `JwtStrategy`, `JwtRefreshStrategy` |
 
 Consumers inject typed values via `@Inject(jwtConfig.KEY)` with
 `ConfigType<typeof jwtConfig>`. The compiler enforces the interface — a
@@ -102,7 +102,7 @@ which is required for `@Inject(jwtConfig.KEY)` to resolve.
 ### Fail-fast configuration validation
 
 The `jwtConfig` and `databaseConfig` factory functions throw an explicit
-`Error` at module initialisation if a required environment variable is
+`Error` at module initialization if a required environment variable is
 absent. This prevents the application from starting with an insecure or
 broken configuration (OWASP A05). The error is thrown before any port is
 bound, making misconfiguration immediately visible in deployment pipelines.
@@ -137,15 +137,14 @@ Flutter client:
   "errors": {
     "email": "email must be a valid email address.",
     "password": "password must be at least 8 characters."
-  },
-  ...
+  }
 }
 ```
 
 This is produced by the `exceptionFactory` in `ValidationPipe`, which
 converts class-validator constraint arrays into a `Record<string, string>`
 before wrapping them in `UnprocessableEntityException`. The filter then
-deserialises this structured body and places it in `errors`.
+deserializes this structured body and places it in `errors`.
 
 Non-`HttpException` values (unhandled errors) produce HTTP 500 with a
 generic message, preventing internal details from reaching the client
@@ -182,13 +181,13 @@ whether the user exists, preventing timing-based user enumeration
 
 ## Security Alignment (OWASP Top 10)
 
-| OWASP | Measure |
-|-------|---------|
-| A02 — Cryptographic Failures | Passwords hashed with bcrypt (12 rounds). Refresh tokens hashed before persistence. `password_hash` and `refresh_token_hash` columns declared with `select: false`. |
-| A03 — Injection | TypeORM QueryBuilder with parameterised bindings. `ValidationPipe(whitelist: true)` strips undeclared request body fields. |
-| A05 — Security Misconfiguration | `jwtConfig` and `databaseConfig` throw at startup when required variables are absent. `synchronize: false` in production prevents accidental schema destruction. |
-| A07 — Auth Failures | Short-lived access tokens (15 min). Refresh token rotation on every use. Logout nullifies `refresh_token_hash`. Token mismatch on refresh invalidates the entire session. Timing-safe login prevents user enumeration. |
-| A09 — Logging Failures | No credential values in log output. `HttpExceptionFilter` produces generic 500 messages for unhandled errors. Field-keyed validation errors contain no sensitive data. |
+| OWASP                           | Measure                                                                                                                                                                                                                |
+|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A02 — Cryptographic Failures    | Passwords hashed with bcrypt (12 rounds). Refresh tokens hashed before persistence. `password_hash` and `refresh_token_hash` columns declared with `select: false`.                                                    |
+| A03 — Injection                 | TypeORM QueryBuilder with parameterised bindings. `ValidationPipe(whitelist: true)` strips undeclared request body fields.                                                                                             |
+| A05 — Security Misconfiguration | `jwtConfig` and `databaseConfig` throw at startup when required variables are absent. `synchronize: false` in production prevents accidental schema destruction.                                                       |
+| A07 — Auth Failures             | Short-lived access tokens (15 min). Refresh token rotation on every use. Logout nullifies `refresh_token_hash`. Token mismatch on refresh invalidates the entire session. Timing-safe login prevents user enumeration. |
+| A09 — Logging Failures          | No credential values in log output. `HttpExceptionFilter` produces generic 500 messages for unhandled errors. Field-keyed validation errors contain no sensitive data.                                                 |
 
 ---
 
@@ -213,20 +212,20 @@ npm run test:cov
 
 ### Required environment variables
 
-| Variable               | Description                                        | Default   |
-|------------------------|----------------------------------------------------|-----------|
-| `DB_HOST`              | PostgreSQL host                                    | —         |
-| `DB_PORT`              | PostgreSQL port                                    | `5432`    |
-| `DB_USERNAME`          | PostgreSQL username                                | —         |
-| `DB_PASSWORD`          | PostgreSQL password                                | —         |
-| `DB_NAME`              | PostgreSQL database name                           | —         |
-| `JWT_ACCESS_SECRET`    | Secret for signing access tokens (min. 32 chars)  | required  |
-| `JWT_ACCESS_EXPIRES_IN`| Access token TTL                                   | `15m`     |
-| `JWT_REFRESH_SECRET`   | Secret for signing refresh tokens (min. 32 chars) | required  |
-| `JWT_REFRESH_EXPIRES_IN`| Refresh token TTL                                 | `7d`      |
-| `PORT`                 | HTTP listening port                                | `3000`    |
-| `NODE_ENV`             | `development` \| `production` \| `test`            | `development` |
-| `CORS_ORIGIN`          | Allowed CORS origin                                | `*`       |
+| Variable                 | Description                                       | Default       |
+|--------------------------|---------------------------------------------------|---------------|
+| `DB_HOST`                | PostgreSQL host                                   | —             |
+| `DB_PORT`                | PostgreSQL port                                   | `5432`        |
+| `DB_USERNAME`            | PostgreSQL username                               | —             |
+| `DB_PASSWORD`            | PostgreSQL password                               | —             |
+| `DB_NAME`                | PostgreSQL database name                          | —             |
+| `JWT_ACCESS_SECRET`      | Secret for signing access tokens (min. 32 chars)  | required      |
+| `JWT_ACCESS_EXPIRES_IN`  | Access token TTL                                  | `15m`         |
+| `JWT_REFRESH_SECRET`     | Secret for signing refresh tokens (min. 32 chars) | required      |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token TTL                                 | `7d`          |
+| `PORT`                   | HTTP listening port                               | `3000`        |
+| `NODE_ENV`               | `development` \| `production` \| `test`           | `development` |
+| `CORS_ORIGIN`            | Allowed CORS origin                               | `*`           |
 
 Variables marked **required** cause the application to refuse to start
 if absent. All others have safe defaults.
@@ -250,28 +249,28 @@ npm run test:cov
 
 ### Test coverage targets
 
-| Test file | Subject | Cases |
-|---|---|---|
-| `test/auth/auth.service.spec.ts` | `AuthService` — register, login, logout, refresh, getMe (success + failure paths) | 14 |
-| `test/auth/auth.controller.spec.ts` | `AuthController` — all five endpoints, delegation, HTTP semantics | 9 |
-| `test/auth/users.service.spec.ts` | `UsersService` — create, findByEmail, findById, updateRefreshTokenHash | 9 |
-| `test/common/http-exception.filter.spec.ts` | `HttpExceptionFilter` — all status codes, 422 formats, 500 fallback, envelope shape | 11 |
-| `test/config/jwt.config.spec.ts` | `jwtConfig` — correct values, default TTLs, fail-fast on missing secrets | 4 |
-| **Total** | | **47** |
+| Test file                                   | Subject                                                                             | Cases  |
+|---------------------------------------------|-------------------------------------------------------------------------------------|--------|
+| `test/auth/auth.service.spec.ts`            | `AuthService` — register, login, logout, refresh, getMe (success + failure paths)   | 14     |
+| `test/auth/auth.controller.spec.ts`         | `AuthController` — all five endpoints, delegation, HTTP semantics                   | 9      |
+| `test/auth/users.service.spec.ts`           | `UsersService` — create, findByEmail, findById, updateRefreshTokenHash              | 9      |
+| `test/common/http-exception.filter.spec.ts` | `HttpExceptionFilter` — all status codes, 422 formats, 500 fallback, envelope shape | 11     |
+| `test/config/jwt.config.spec.ts`            | `jwtConfig` — correct values, default TTLs, fail-fast on missing secrets            | 4      |
+| **Total**                                   |                                                                                     | **47** |
 
 ---
 
 ## Dependencies
 
-| Package | Role |
-|---|---|
-| `@nestjs/jwt` | JWT signing and verification |
-| `@nestjs/passport` | Passport.js integration |
-| `@nestjs/config` | Typed configuration namespaces via `registerAs` |
-| `passport-local` | Email/password credential strategy |
-| `passport-jwt` | JWT Bearer token strategy (access + refresh) |
-| `bcrypt` | Password and refresh token hashing (12 rounds) |
-| `class-validator` | DTO input validation constraints |
-| `class-transformer` | DTO transformation (lowercase email normalisation) |
-| `typeorm` + `pg` | PostgreSQL ORM with parameterised queries |
-| `@nestjs/testing` + `jest` + `ts-jest` | Unit testing framework |
+| Package                                | Role                                               |
+|----------------------------------------|----------------------------------------------------|
+| `@nestjs/jwt`                          | JWT signing and verification                       |
+| `@nestjs/passport`                     | Passport.js integration                            |
+| `@nestjs/config`                       | Typed configuration namespaces via `registerAs`    |
+| `passport-local`                       | Email/password credential strategy                 |
+| `passport-jwt`                         | JWT Bearer token strategy (access + refresh)       |
+| `bcrypt`                               | Password and refresh token hashing (12 rounds)     |
+| `class-validator`                      | DTO input validation constraints                   |
+| `class-transformer`                    | DTO transformation (lowercase email normalisation) |
+| `typeorm` + `pg`                       | PostgreSQL ORM with parameterised queries          |
+| `@nestjs/testing` + `jest` + `ts-jest` | Unit testing framework                             |
