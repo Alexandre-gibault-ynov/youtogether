@@ -43,7 +43,6 @@ lib/
     │   │   │   └── i_auth_repository.dart    # Abstract repository interface
     │   │   └── usecases/
     │   │       ├── login_use_case.dart               # LoginParams + LoginUseCase
-    │   │       ├── login_with_google_use_case.dart   # LoginWithGoogleUseCase
     │   │       ├── logout_use_case.dart               # LogoutUseCase
     │   │       ├── get_current_user_use_case.dart     # GetCurrentUserUseCase
     │   │       ├── refresh_token_use_case.dart        # RefreshTokenUseCase
@@ -112,7 +111,6 @@ The domain layer is framework-agnostic. It contains:
 | Use Case | Params | Return |
 |---|---|---|
 | `LoginUseCase` | `LoginParams { email, password }` | `Either<Failure, UserEntity>` |
-| `LoginWithGoogleUseCase` | `NoParams` | `Either<Failure, UserEntity>` |
 | `LogoutUseCase` | `NoParams` | `Either<Failure, void>` |
 | `GetCurrentUserUseCase` | `NoParams` | `Either<Failure, UserEntity?>` |
 | `RefreshTokenUseCase` | `NoParams` | `Either<Failure, void>` |
@@ -136,7 +134,7 @@ The data layer implements the repository and data source interfaces:
 
 ### Presentation Layer
 
-- **AuthBloc** — manages session state. Events: login, Google login, logout, check
+- **AuthBloc** — manages session state. Events: login, logout, check
   status, token refresh. Never catches exceptions; consumes `Either` via `fold()`.
 - **RegisterCubit** — manages the account creation flow independently from
   `AuthBloc`, respecting the Single Responsibility Principle. Delegates to

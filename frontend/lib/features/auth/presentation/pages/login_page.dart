@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:youtogether/core/error/failures.dart';
-import 'package:youtogether/features/auth/presentation/bloc/auth/auth_bloc.dart';
-import 'package:youtogether/features/auth/presentation/pages/register_page.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_theme.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/router/app_routes.dart';
+import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_event.dart';
 import '../bloc/auth/auth_state.dart';
 
-/// Login screen for the YouTogether application.
+/// Login screen — "Connexion".
 ///
-/// Provides email/password authentication.
-/// Connected to [AuthBloc] via [BlocListener] for error snackbars and
-/// [BlocBuilder] for loading state (disables controls, shows spinner).
+/// Navigation is handled exclusively via [GoRouter]:
+/// - "Créer un compte" → [context.push] to [AppRoutes.register]
+/// - "Annuler"         → [context.pop]
+/// - [AuthAuthenticated] emitted by [AuthBloc] → [context.go] to [AppRoutes.homePage]
+///
+/// [AuthBloc] is provided by the ancestor [BlocProvider] registered in
+/// [app_router.dart]; no local provider is needed here.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
-
-  /// Name route identifier.
-  static const routeName = '/login';
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -36,7 +38,9 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
   // Actions
+  // ---------------------------------------------------------------------------
 
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
@@ -53,28 +57,32 @@ class _LoginPageState extends State<LoginPage> {
     _formKey.currentState?.reset();
     _emailController.clear();
     _passwordController.clear();
-    Navigator.of(context).maybePop();
+    if (context.canPop()) context.pop();
   }
 
   void _onCreateAccount() {
-    Navigator.of(context).pushNamed(RegisterPage.routeName);
+    context.push(AppRoutes.register);
   }
 
+  // ---------------------------------------------------------------------------
   // Failure display
+  // ---------------------------------------------------------------------------
 
   String _failureMessage(Failure failure) {
     return switch (failure) {
       AuthFailure(:final message) => message,
       NetworkFailure() =>
-        'No internet connection. Please check your network and try again.',
+      'Aucune connexion Internet. Vérifiez votre réseau et réessayez.',
       ServerFailure(:final statusCode) =>
-        'Server error ($statusCode). Please try again later.',
+      'Erreur serveur ($statusCode). Veuillez réessayer plus tard.',
       ValidationFailure(:final errors) => errors.values.join('\n'),
-      _ => 'An unexpected error occurred. Please try again.',
+      _ => 'Une erreur inattendue est survenue. Veuillez réessayer.',
     };
   }
 
-  //Build
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +97,10 @@ class _LoginPageState extends State<LoginPage> {
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthFailureState) {
+          if (state is AuthAuthenticated) {
+            // Login succeeded — navigate to home and clear the back stack.
+            context.go(AppRoutes.homePage);
+          } else if (state is AuthFailureState) {
             ScaffoldMessenger.of(context)
               ..clearSnackBars()
               ..showSnackBar(
@@ -113,19 +124,20 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Large top spacer — pushes form to vertical centre
                   const Spacer(flex: 3),
 
-                  // Header
+                  // ── Heading ──────────────────────────────────────────────
                   Text(
+                    key: const Key('login_heading'),
                     'Connexion',
                     textAlign: TextAlign.center,
                     style: AppTheme.displayTitle,
                   ),
                   const SizedBox(height: 24),
 
-                  // Email field
+                  // ── Email ─────────────────────────────────────────────────
                   TextFormField(
+                    key: const Key('login_email_field'),
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
@@ -148,8 +160,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Password field
+                  // ── Password ──────────────────────────────────────────────
                   TextFormField(
+                    key: const Key('login_password_field'),
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
@@ -164,13 +177,13 @@ class _LoginPageState extends State<LoginPage> {
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
                           size: 20,
-                          // color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondary,
                         ),
                         tooltip: _obscurePassword
                             ? 'Afficher le mot de passe'
                             : 'Masquer le mot de passe',
                         onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                              () => _obscurePassword = !_obscurePassword,
                         ),
                       ),
                     ),
@@ -183,30 +196,32 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Connexion Button
+                  // ── Se connecter ──────────────────────────────────────────
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       final isLoading = state is AuthLoading;
                       return FilledButton(
+                        key: const Key('login_submit_button'),
                         onPressed: isLoading ? null : _onSubmit,
                         child: isLoading
                             ? const SizedBox.square(
-                                dimension: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white70,
-                                ),
-                              )
+                          dimension: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white70,
+                          ),
+                        )
                             : const Text('Se connecter'),
                       );
                     },
                   ),
                   const SizedBox(height: 10),
 
-                  // Cancel Button
+                  // ── Annuler ───────────────────────────────────────────────
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       return OutlinedButton(
+                        key: const Key('login_cancel_button'),
                         onPressed: state is AuthLoading ? null : _onCancel,
                         child: const Text('Annuler'),
                       );
@@ -214,7 +229,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 28),
 
-                  // No account section
+                  // ── Pas de compte ? ───────────────────────────────────────
                   Text(
                     'Pas de compte ?',
                     textAlign: TextAlign.center,
@@ -222,13 +237,13 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Create account button
+                  // ── Créer un compte ───────────────────────────────────────
                   OutlinedButton(
+                    key: const Key('login_create_account_button'),
                     onPressed: _onCreateAccount,
                     child: const Text('Créer un compte'),
                   ),
 
-                  // Bottom spacer
                   const Spacer(flex: 2),
                 ],
               ),
