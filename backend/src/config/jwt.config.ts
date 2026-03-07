@@ -1,4 +1,5 @@
 import { registerAs } from '@nestjs/config';
+import type { StringValue } from 'ms';
 
 /**
  * Typed contract for JWT configuration values.
@@ -12,13 +13,13 @@ export interface JwtConfig {
   accessSecret: string;
 
   /** Access token TTL — short-lived (default 15m). */
-  accessExpiresIn: string;
+  accessExpiresIn: StringValue;
 
   /** Secret used to sign and verify refresh tokens. Must differ from accessSecret. */
   refreshSecret: string;
 
   /** Refresh token TTL — long-lived (default 7d). */
-  refreshExpiresIn: string;
+  refreshExpiresIn: StringValue;
 }
 
 /**
@@ -45,8 +46,8 @@ export const jwtConfig = registerAs('jwt', (): JwtConfig => {
 
   return {
     accessSecret,
-    accessExpiresIn: process.env['JWT_ACCESS_EXPIRES_IN'] ?? '15m',
+    accessExpiresIn: (process.env['JWT_ACCESS_EXPIRES_IN'] ?? '15m') as StringValue,
     refreshSecret,
-    refreshExpiresIn: process.env['JWT_REFRESH_EXPIRES_IN'] ?? '7d',
+    refreshExpiresIn: (process.env['JWT_REFRESH_EXPIRES_IN'] ?? '7d') as StringValue,
   };
 });
