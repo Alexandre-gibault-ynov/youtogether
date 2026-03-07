@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/app.dart';
 import 'injection_container.dart';
@@ -19,6 +20,7 @@ import 'injection_container.dart';
 /// 3. [runApp] — builds the widget tree starting at [YouTogether].
 Future<void> initApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('fr_FR');
   await initDependencies();
   runApp(const YouTogether());
 }

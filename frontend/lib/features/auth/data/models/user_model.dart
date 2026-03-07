@@ -54,7 +54,7 @@ extension UserModelX on UserModel {
     id: id,
     email: email,
     displayName: displayName,
-    role: role == 'registered' ? UserRole.authenticated : UserRole.viewer,
+    role: role == 'registered' ? UserRole.authenticated : UserRole.guest,
     createdAt: createdAt,
   );
 }

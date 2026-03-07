@@ -8,6 +8,7 @@ import '../../features/auth/presentation/bloc/auth/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth/auth_state.dart';
 import '../../features/auth/presentation/bloc/register/register_cubit.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/room/presentation/pages/home_page.dart';
 import '../../injection_container.dart';
@@ -82,6 +83,13 @@ GoRouter createRouter(AuthBloc authBloc) {
           child: const RegisterPage(),
         ),
       ),
+      GoRoute(
+        path: AppRoutes.profile,
+        name: 'profile',
+        // ProfilePage reads AuthBloc from the ancestor BlocProvider defined
+        // in app.dart — no additional scoping is needed.
+        builder: (_, __) => const ProfilePage(),
+      )
     ],
   );
 }

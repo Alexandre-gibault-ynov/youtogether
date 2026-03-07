@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/router/app_routes.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../app/app_theme.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../auth/presentation/bloc/auth/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth/auth_state.dart';
-
 import '../../../room/domain/entities/room_entity.dart';
 
 /// Home screen — public room listing.
@@ -17,11 +15,14 @@ import '../../../room/domain/entities/room_entity.dart';
 ///   ─ tagline "Regardez des vidéos YouTube ensemble en temps réel"
 ///   ─ "GROUPES PUBLICS" section heading
 ///   ─ scrollable list of [_RoomCard] items (name + member count)
-///   ─ persistent bottom bar [Rejoindre un groupe privé]
+///   ─ persistent bottom bar, which adapts to auth state:
+///       • Authenticated   → "Créer un groupe privé" (top) +
+///                           "Rejoindre un groupe privé" (bottom)
+///       • Unauthenticated → "Rejoindre un groupe privé" only
 ///
 /// The AppBar trailing action adapts to [AuthBloc] state:
-/// - [AuthUnauthenticated] → "Connexion" → navigates to [LoginPage]
-/// - [AuthAuthenticated]   → "Profil" → navigates to the profile screen
+///   - [AuthUnauthenticated] → "Connexion" → navigates to [LoginPage]
+///   - [AuthAuthenticated]   → "Profil"    → navigates to [ProfilePage]
 ///
 /// The room list is provided via constructor for now; it will be driven by
 /// [RoomBloc] once that feature is integrated.
@@ -68,7 +69,7 @@ class HomePage extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Tagline ────────────────────────────────────────────────────
+          // ── Tagline ──────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
             child: Text(
@@ -81,7 +82,7 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // ── Section heading ────────────────────────────────────────────
+          // ── Section heading ──────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -92,7 +93,7 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ── Room list ──────────────────────────────────────────────────
+          // ── Room list ────────────────────────────────────────────────────
           Expanded(
             child: rooms.isEmpty
                 ? _buildEmptyState()
@@ -108,9 +109,16 @@ class HomePage extends StatelessWidget {
         ],
       ),
 
-      // ── Bottom bar: Rejoindre un groupe privé ───────────────────────────
-      bottomNavigationBar: _BottomJoinBar(
-        onTap: () => _onJoinPrivate(context),
+      // ── Bottom bar — adapts to authentication state ──────────────────────
+      bottomNavigationBar: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final isAuthenticated = state is AuthAuthenticated;
+          return _BottomActionBar(
+            isAuthenticated: isAuthenticated,
+            onCreatePrivate: () => _onCreatePrivate(context),
+            onJoinPrivate: () => _onJoinPrivate(context),
+          );
+        },
       ),
     );
   }
@@ -131,11 +139,15 @@ class HomePage extends StatelessWidget {
 
   void _onAuthAction(BuildContext context, AuthState state) {
     if (state is AuthAuthenticated) {
-      // Navigate to profile screen (route to be defined).
-      context.push(AppRoutes.homePage); // profile route — to be defined
+      context.push(AppRoutes.profile);
     } else {
       context.push(AppRoutes.login);
     }
+  }
+
+  void _onCreatePrivate(BuildContext context) {
+    // Navigate to private room creation screen (route to be defined).
+    // create-private route — to be defined
   }
 
   void _onJoinPrivate(BuildContext context) {
@@ -209,33 +221,106 @@ class _RoomCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Bottom join bar
+// Bottom action bar
 // ---------------------------------------------------------------------------
 
-class _BottomJoinBar extends StatelessWidget {
-  const _BottomJoinBar({required this.onTap});
+/// Persistent bottom action bar that adapts to the user's authentication state.
+///
+/// Authenticated layout (top to bottom):
+///   ─ "Créer un groupe privé"     (key: home_create_private_button)
+///   ─ border
+///   ─ "Rejoindre un groupe privé" (key: home_join_private_button)
+///
+/// Unauthenticated layout:
+///   ─ "Rejoindre un groupe privé" only
+///
+/// Both rows maintain a fixed height of 56px, consistent with the original
+/// single-row layout.
+class _BottomActionBar extends StatelessWidget {
+  const _BottomActionBar({
+    required this.isAuthenticated,
+    required this.onCreatePrivate,
+    required this.onJoinPrivate,
+  });
 
-  final VoidCallback onTap;
+  final bool isAuthenticated;
+  final VoidCallback onCreatePrivate;
+  final VoidCallback onJoinPrivate;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 56,
-          decoration: const BoxDecoration(
-            color: AppTheme.cardDark,
-            border: Border(
-              top: BorderSide(color: AppTheme.borderDark),
-            ),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.cardDark,
+          border: Border(
+            top: BorderSide(color: AppTheme.borderDark),
           ),
-          alignment: Alignment.center,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // "Créer un groupe privé" — visible only when authenticated.
+            if (isAuthenticated) ...[
+              _BarItem(
+                key: const Key('home_create_private_button'),
+                label: 'Créer un groupe privé',
+                onTap: onCreatePrivate,
+                style: _BarItemStyle.accent,
+              ),
+              const Divider(height: 1, color: AppTheme.borderDark),
+            ],
+
+            // "Rejoindre un groupe privé" — always visible.
+            _BarItem(
+              key: const Key('home_join_private_button'),
+              label: 'Rejoindre un groupe privé',
+              onTap: onJoinPrivate,
+              style: _BarItemStyle.muted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bar item
+// ---------------------------------------------------------------------------
+
+enum _BarItemStyle { accent, muted }
+
+class _BarItem extends StatelessWidget {
+  const _BarItem({
+    super.key,
+    required this.label,
+    required this.onTap,
+    required this.style,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final _BarItemStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = style == _BarItemStyle.accent
+        ? AppTheme.accent
+        : AppTheme.textSecondary;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        height: 56,
+        child: Center(
           child: Text(
-            'Rejoindre un groupe privé',
+            label,
             style: AppTheme.body.copyWith(
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.w400,
+              color: color,
+              fontWeight: style == _BarItemStyle.accent
+                  ? FontWeight.w500
+                  : FontWeight.w400,
             ),
           ),
         ),

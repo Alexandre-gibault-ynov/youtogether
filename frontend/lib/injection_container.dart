@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 
+import 'core/network/auth_interceptor.dart';
 import 'features/auth/data/datasources/auth_local_data_source_impl.dart';
 import 'features/auth/data/datasources/auth_remote_data_source_impl.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
@@ -41,28 +42,15 @@ bool _initialized = false;
 /// except [AuthBloc] and [RegisterCubit], which are registered as factories
 /// (new instance per call) because BLoC/Cubit instances must not be shared
 /// across widget subtrees — each [BlocProvider] creates its own instance.
+///
+/// Registration order matters for [Dio]: [AuthLocalDataSourceImpl] must be
+/// registered before [Dio] so that [AuthInterceptor] can hold a live reference
+/// to the local data source at construction time.
 Future<void> initDependencies() async {
   if (_initialized) return;
   _initialized = true;
 
   // ── Infrastructure ──────────────────────────────────────────────────────────
-
-  // Dio HTTP client — single instance with global /api prefix and JSON headers.
-  sl.registerLazySingleton<Dio>(() {
-    return Dio(
-      BaseOptions(
-        // Android emulator: 10.0.2.2 routes to the host machine's localhost.
-        // Override at build time with --dart-define=API_BASE_URL=<url>.
-        baseUrl: const String.fromEnvironment(
-          'API_BASE_URL',
-          defaultValue: 'http://10.0.2.2:3000/api',
-        ),
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
-  });
 
   // flutter_secure_storage — encrypted token vault.
   //
@@ -76,16 +64,46 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // ── Data layer ──────────────────────────────────────────────────────────────
-
-  sl.registerLazySingleton<AuthRemoteDataSourceImpl>(
-        () => AuthRemoteDataSourceImpl(dio: sl<Dio>()),
-  );
-
+  // AuthLocalDataSourceImpl is registered before Dio so that AuthInterceptor
+  // can hold a reference to it at construction time.
   sl.registerLazySingleton<AuthLocalDataSourceImpl>(
         () => AuthLocalDataSourceImpl(
       secureStorage: sl<FlutterSecureStorage>(),
     ),
+  );
+
+  // Dio HTTP client — single instance with global /api prefix, JSON headers,
+  // and [AuthInterceptor] for transparent Bearer token injection on every
+  // outgoing request that requires authentication (logout, /me, room routes…).
+  sl.registerLazySingleton<Dio>(() {
+    final dio = Dio(
+      BaseOptions(
+        // Android emulator: 10.0.2.2 routes to the host machine's localhost.
+        // Override at build time with --dart-define=API_BASE_URL=<url>.
+        baseUrl: const String.fromEnvironment(
+          'API_BASE_URL',
+          defaultValue: 'http://10.0.2.2:3000/api',
+        ),
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 15),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+
+    // Attach the auth interceptor after construction so that the Dio instance
+    // itself can be referenced inside future interceptor callbacks
+    // (e.g. a retry interceptor that calls refreshToken using the same Dio).
+    dio.interceptors.add(
+      AuthInterceptor(localDataSource: sl<AuthLocalDataSourceImpl>()),
+    );
+
+    return dio;
+  });
+
+  // ── Data layer ──────────────────────────────────────────────────────────────
+
+  sl.registerLazySingleton<AuthRemoteDataSourceImpl>(
+        () => AuthRemoteDataSourceImpl(dio: sl<Dio>()),
   );
 
   sl.registerLazySingleton<IAuthRepository>(
