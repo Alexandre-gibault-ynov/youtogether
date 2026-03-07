@@ -29,12 +29,12 @@ abstract class UserModel with _$UserModel {
     /// User role as returned by the API ('registered' | 'guest').
     required String role,
 
-    /// JWT access token embedded in the login / Google OAuth2 response.
+    /// JWT access token embedded in the login.
     ///
     /// This field is nullable because GET /auth/me does not re-issue tokens.
     @JsonKey(name: 'access_token') String? accessToken,
 
-    /// Refresh token embedded in the login / Google OAuth2 response.
+    /// Refresh token embedded in the login.
     @JsonKey(name: 'refresh_token') String? refreshToken,
 
     /// UTC timestamp of account creation.

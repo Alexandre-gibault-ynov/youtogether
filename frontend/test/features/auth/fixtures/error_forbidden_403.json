@@ -1,0 +1,8 @@
+{
+  "statusCode": 403,
+  "error": "Forbidden",
+  "message": "Refresh token is invalid. Please log in again.",
+  "errors": null,
+  "timestamp": "2026-02-27T14:34:00.000Z",
+  "path": "/api/auth/refresh"
+}

@@ -7,7 +7,7 @@
 /// credentials or tokens are stored outside of this secure storage layer.
 ///
 /// All methods throw [CacheException] on storage-level errors.
-abstract class IAuthLocalDatasource {
+abstract class IAuthLocalDataSource {
   /// Persists the [accessToken] and [refreshToken] to encrypted secure storage.
   ///
   /// Overwrites any previously stored tokens.

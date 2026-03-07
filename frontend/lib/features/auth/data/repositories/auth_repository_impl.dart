@@ -1,8 +1,8 @@
 import 'package:either_dart/either.dart';
 import 'package:youtogether/core/error/exceptions.dart';
-import 'package:youtogether/features/auth/data/datasources/i_auth_local_datasource.dart';
-import 'package:youtogether/features/auth/data/datasources/i_auth_remote_datasource.dart';
-import 'package:youtogether/features/auth/data/model/user_model.dart';
+import 'package:youtogether/features/auth/data/datasources/i_auth_local_data_source.dart';
+import 'package:youtogether/features/auth/data/datasources/i_auth_remote_data_source.dart';
+import 'package:youtogether/features/auth/data/models/user_model.dart';
 import 'package:youtogether/features/auth/domain/repositories/i_auth_repository.dart';
 
 import '../../../../core/error/failures.dart';
@@ -23,51 +23,14 @@ import '../../domain/entities/user_entity.dart';
 /// No exception propagates beyond this class; all errors are returned as
 /// [Left<Failure, T>] values.
 class AuthRepositoryImpl implements IAuthRepository {
-  final IAuthRemoteDatasource _remoteDatasource;
-  final IAuthLocalDatasource _localDatasource;
+  final IAuthRemoteDataSource _remoteDatasource;
+  final IAuthLocalDataSource _localDatasource;
 
   const AuthRepositoryImpl({
-    required IAuthRemoteDatasource remoteDataSource,
-    required IAuthLocalDatasource localDataSource,
+    required IAuthRemoteDataSource remoteDataSource,
+    required IAuthLocalDataSource localDataSource,
   }) : _remoteDatasource = remoteDataSource,
        _localDatasource = localDataSource;
-
-
-  @override
-  Future<Either<Failure, UserEntity>> register({required String email, required String password, required String username}) async {
-    try{
-      final userModel = await _remoteDatasource.register(
-        username: username,
-        email: email,
-        password: password,
-      );
-      await _persistToken(userModel);
-      return Right(userModel.toDomain());
-    } on ServerException catch (e) {
-      // HTTP 409 Conflict — email already in use.
-      if (e.statusCode == 409) {
-        return Left(
-          Failure.validation(
-            errors: {'email': 'This email address is already in use.'},
-          ),
-        );
-      }
-      // HTTP 422 Unprocessable Entity — schema validation failure.
-      if (e.statusCode == 422) {
-        return Left(
-          Failure.validation(
-            errors: {'form': e.message},
-          ),
-        );
-      }
-      return Left(Failure.server(statusCode: e.statusCode, message: e.message));
-    } on NetworkException {
-      return const Left(Failure.network());
-    } on CacheException catch (e) {
-      return Left(Failure.cache(message: e.message));
-    }
-  }
-
   @override
   Future<Either<Failure, UserEntity>> register({
     required String email,

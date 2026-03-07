@@ -1,0 +1,11 @@
+{
+  "statusCode": 422,
+  "error": "Unprocessable Entity",
+  "message": "Validation failed.",
+  "errors": {
+    "email": "email must be a valid email address.",
+    "password": "password must be at least 8 characters."
+  },
+  "timestamp": "2026-02-27T14:35:00.000Z",
+  "path": "/api/auth/register"
+}

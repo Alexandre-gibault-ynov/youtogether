@@ -1,0 +1,8 @@
+{
+  "statusCode": 409,
+  "error": "Conflict",
+  "message": "An account with this email address already exists.",
+  "errors": null,
+  "timestamp": "2026-02-27T14:32:00.000Z",
+  "path": "/api/auth/register"
+}

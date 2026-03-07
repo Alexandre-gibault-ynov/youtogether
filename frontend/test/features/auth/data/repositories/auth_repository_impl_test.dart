@@ -2,10 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:youtogether/core/error/exceptions.dart';
 import 'package:youtogether/core/error/failures.dart';
-import 'package:youtogether/features/auth/data/datasources/i_auth_local_datasource.dart';
-import 'package:youtogether/features/auth/data/datasources/i_auth_remote_datasource.dart';
-import 'package:youtogether/features/auth/data/model/token_model.dart';
-import 'package:youtogether/features/auth/data/model/user_model.dart';
+import 'package:youtogether/features/auth/data/datasources/i_auth_local_data_source.dart';
+import 'package:youtogether/features/auth/data/datasources/i_auth_remote_data_source.dart';
+import 'package:youtogether/features/auth/data/models/token_model.dart';
+import 'package:youtogether/features/auth/data/models/user_model.dart';
 import 'package:youtogether/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:youtogether/features/auth/domain/entities/user_entity.dart';
 
@@ -13,9 +13,9 @@ import 'package:youtogether/features/auth/domain/entities/user_entity.dart';
 // Test doubles
 // ---------------------------------------------------------------------------
 
-class MockAuthRemoteDataSource extends Mock implements IAuthRemoteDatasource {}
+class MockAuthRemoteDataSource extends Mock implements IAuthRemoteDataSource {}
 
-class MockAuthLocalDataSource extends Mock implements IAuthLocalDatasource {}
+class MockAuthLocalDataSource extends Mock implements IAuthLocalDataSource {}
 
 // ---------------------------------------------------------------------------
 // Fixtures

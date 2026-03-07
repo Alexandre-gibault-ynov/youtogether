@@ -1,0 +1,10 @@
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "alice@example.com",
+  "username": "Alice",
+  "role": "registered",
+  "avatar_url": null,
+  "created_at": "2026-02-27T12:00:00.000Z",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmE4NWY2NC01NzE3LTQ1NjItYjNmYy0yYzk2M2Y2NmFmYTYiLCJlbWFpbCI6ImFsaWNlQGV4YW1wbGUuY29tIiwiaWF0IjoxNzA5MDMwNDAwLCJleHAiOjE3MDkwMzEzMDB9.AAAA",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmE4NWY2NC01NzE3LTQ1NjItYjNmYy0yYzk2M2Y2NmFmYTYiLCJlbWFpbCI6ImFsaWNlQGV4YW1wbGUuY29tIiwiaWF0IjoxNzA5MDMwNDAwLCJleHAiOjE3MDk2MzUyMDB9.BBBB"
+}
