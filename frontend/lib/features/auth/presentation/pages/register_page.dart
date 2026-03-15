@@ -4,14 +4,23 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_theme.dart';
 import '../../../../core/error/failures.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../bloc/auth/auth_event.dart';
 import '../bloc/register/register_cubit.dart';
 import '../bloc/register/register_state.dart';
 
 /// Account creation screen — "Création de compte".
 ///
-/// Navigation is handled exclusively via [GoRouter]:
-/// - [RegisterSuccess]      → [context.pop] back to [LoginPage]
-/// - "Annuler"              → [context.pop]
+/// On [RegisterState.success], this page dispatches
+/// [AuthEvent.userSessionEstablished] to [AuthBloc] (available via the
+/// ancestor [BlocProvider] declared in [app.dart]), which immediately
+/// transitions the application to [AuthState.authenticated]. GoRouter then
+/// redirects to [AppRoutes.homePage] via the [refreshListenable] mechanism,
+/// so no explicit navigation call is needed here.
+///
+/// The complete post-registration flow is therefore:
+///   RegisterCubit.success → AuthBloc.userSessionEstablished
+///     → AuthState.authenticated → GoRouter redirects to /
 ///
 /// [RegisterCubit] is provided by a [BlocProvider] scoped to this route,
 /// declared in [app_router.dart].
@@ -93,8 +102,13 @@ class _RegisterPageState extends State<RegisterPage> {
       body: BlocListener<RegisterCubit, RegisterState>(
         listener: (context, state) {
           if (state is RegisterSuccess) {
-            // Registration succeeded — pop back to LoginPage.
-            if (context.canPop()) context.pop();
+            // Dispatch the user to AuthBloc so the app transitions to
+            // AuthState.authenticated without a redundant network call.
+            // GoRouter's refreshListenable picks up the state change and
+            // redirects to / automatically.
+            context.read<AuthBloc>().add(
+              AuthEvent.userSessionEstablished(user: state.user),
+            );
           } else if (state is RegisterFailureState) {
             ScaffoldMessenger.of(context)
               ..clearSnackBars()

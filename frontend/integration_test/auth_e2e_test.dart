@@ -51,11 +51,13 @@ import 'package:youtogether/main.dart' as app;
 //    Finder matches. This is correct for operations backed by real network or
 //    platform channels whose duration is non-deterministic.
 //
-// 5. SCENARIO ORDER — Scenarios are ordered to respect state dependencies:
-//    TC-E2E-08 (cancel registration) executes before TC-E2E-07 (full login)
-//    because once authenticated, navigating back to LoginPage requires a
-//    logout. TC-E2E-09 and TC-E2E-10 depend on TC-E2E-07 having produced an
-//    authenticated session, so they always execute last.
+// 5. SCENARIO ORDER — Scenarios that require an unauthenticated state
+//    (TC-E2E-08, TC-E2E-06) execute before TC-E2E-05 (full registration).
+//    TC-E2E-05 now ends with an auto-login; the user lands on an authenticated
+//    HomePage via [AuthEvent.userSessionEstablished]. TC-E2E-09 and TC-E2E-10
+//    follow directly. TC-E2E-07 (explicit login) executes last, after the
+//    logout produced by TC-E2E-10, which restores the unauthenticated state
+//    required to reach [LoginPage].
 // ---------------------------------------------------------------------------
 
 void main() {
@@ -67,14 +69,6 @@ void main() {
       'e2e_${DateTime.now().millisecondsSinceEpoch}@youtogether.test';
   const testPassword = 'E2eP@ssword1234';
   const testUsername = 'E2EUser';
-
-  // ---------------------------------------------------------------------------
-  // All E2E scenarios in a single testWidgets block.
-  //
-  // The block name follows the test catalogue: each scenario is
-  // clearly delimited by a step comment that matches the test case ID in the
-  // recette document.
-  // ---------------------------------------------------------------------------
 
   testWidgets('YouTogether — Auth E2E suite', (tester) async {
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -98,32 +92,21 @@ void main() {
     }
 
     /// Navigates to [AppRoutes.homePage] and waits for [HomePage] to appear.
-    ///
-    /// [GoRouter.of()] requires a [BuildContext] from inside the router subtree.
-    /// [find.byType(Scaffold).first] satisfies this because every GoRouter page
-    /// contains a Scaffold at its root.
     Future<void> goHome() async {
       await waitFor(find.byType(Scaffold));
       final element = tester.element(find.byType(Scaffold).first);
       GoRouter.of(element).go(AppRoutes.homePage);
       await waitFor(find.byType(HomePage));
-      // Drain all pending animations so that the previous route is fully
-      // unmounted before the next interaction. Without this, GoRouter keeps
-      // both pages in the widget tree during the exit transition, causing key
-      // collisions when the test taps a widget that exists on both pages.
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
     }
 
     // ── App startup ────────────────────────────────────────────────────────────
 
-    // [tester.runAsync] runs [initApp] in a zone where platform-channel calls
-    // are allowed. [runApp] is called inside [initApp]; subsequent [pump] calls
-    // render the first frames.
     await tester.runAsync(app.initApp);
     await waitFor(find.byType(HomePage));
 
     // =========================================================================
-    // TC-E2E-01 — App cold-start displays HomePage
+    // TC-E2E-01 — App cold-start displays unauthenticated HomePage
     // =========================================================================
 
     expect(
@@ -137,18 +120,13 @@ void main() {
       findsOneWidget,
       reason: 'Unauthenticated state must expose the Connexion action.',
     );
-    // Unauthenticated state: "Créer un groupe privé" must not be visible.
     expect(
       find.byKey(const Key('home_create_private_button')),
       findsNothing,
       reason:
       'The create-private-group action must be hidden when unauthenticated.',
     );
-    // "Rejoindre un groupe privé" is always visible regardless of auth state.
-    expect(
-      find.byKey(const Key('home_join_private_button')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('home_join_private_button')), findsOneWidget);
 
     // =========================================================================
     // TC-E2E-02 — Navigate to LoginPage
@@ -196,12 +174,69 @@ void main() {
     await tester.pump();
 
     expect(find.text("L'adresse email est requise."), findsOneWidget);
-    // RegisterPage must remain — no navigation on client-side validation failure.
     expect(find.byType(RegisterPage), findsOneWidget);
 
     // =========================================================================
-    // TC-E2E-05 — Full registration flow (real backend)
+    // TC-E2E-08 — Cancel registration returns to LoginPage
     // =========================================================================
+    // Executed before TC-E2E-05 and TC-E2E-06 because these scenarios require
+    // an unauthenticated state. TC-E2E-05 now ends with an auto-login, so any
+    // scenario that requires reaching [LoginPage] or [RegisterPage] directly
+    // must run before it.
+
+    await goHome();
+
+    await tester.tap(find.byKey(const Key('home_login_button')));
+    await waitFor(find.byType(LoginPage));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const Key('login_create_account_button')));
+    await waitFor(find.byType(RegisterPage));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byKey(const Key('register_cancel_button')));
+    await waitFor(find.byType(LoginPage));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(find.byType(RegisterPage), findsNothing);
+
+    // =========================================================================
+    // TC-E2E-06 — Login with wrong password shows error SnackBar
+    // =========================================================================
+    // Executed before TC-E2E-05 so the user is still unauthenticated and
+    // [LoginPage] is reachable via the Connexion button.
+
+    await goHome();
+
+    await tester.tap(find.byKey(const Key('home_login_button')));
+    await waitFor(find.byType(LoginPage));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    await tester.enterText(find.byType(TextFormField).at(0), testEmail);
+    await tester.enterText(find.byType(TextFormField).at(1), 'wrongpassword');
+
+    await tester.tap(find.byKey(const Key('login_submit_button')));
+
+    await waitFor(find.byType(SnackBar), timeout: const Duration(seconds: 20));
+
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.byType(LoginPage), findsOneWidget);
+
+    // =========================================================================
+    // TC-E2E-05 — Full registration flow with auto-login (real backend)
+    // =========================================================================
+    //
+    // After a successful registration, [RegisterCubit] emits
+    // [RegisterState.success(user)] with the [UserEntity] returned by the
+    // backend. [RegisterPage] dispatches [AuthEvent.userSessionEstablished]
+    // to [AuthBloc], which immediately emits [AuthState.authenticated].
+    // [GoRouter.refreshListenable] picks up the state change and redirects
+    // to [AppRoutes.homePage] — no manual navigation call is needed.
+    //
+    // Expected outcome:
+    //   - [HomePage] is displayed (not [LoginPage]).
+    //   - AppBar action shows "Profil" (authenticated state).
+    //   - "Créer un groupe privé" button is visible.
 
     await goHome();
 
@@ -223,118 +258,34 @@ void main() {
 
     await tester.tap(find.byKey(const Key('register_submit_button')));
 
-    // Wait for the backend call and for RegisterPage to pop back to LoginPage.
-    await waitFor(
-      find.byType(LoginPage),
-      timeout: const Duration(seconds: 20),
-    );
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-    expect(find.byType(LoginPage), findsOneWidget);
-    expect(find.byType(RegisterPage), findsNothing);
-
-    // =========================================================================
-    // TC-E2E-06 — Login with wrong password shows error SnackBar
-    // =========================================================================
-
-    await goHome();
-
-    await tester.tap(find.byKey(const Key('home_login_button')));
-    await waitFor(find.byType(LoginPage));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-    await tester.enterText(find.byType(TextFormField).at(0), testEmail);
-    await tester.enterText(find.byType(TextFormField).at(1), 'wrongpassword');
-
-    await tester.tap(find.byKey(const Key('login_submit_button')));
-
-    // Wait for the network call to fail and for the SnackBar to appear.
-    await waitFor(find.byType(SnackBar), timeout: const Duration(seconds: 20));
-
-    expect(find.byType(SnackBar), findsOneWidget);
-    // LoginPage must remain — no navigation on authentication failure.
-    expect(find.byType(LoginPage), findsOneWidget);
-
-    // =========================================================================
-    // TC-E2E-08 — Cancel registration returns to LoginPage
-    // =========================================================================
-    // Executed before TC-E2E-07 (full login) because once the session is
-    // established, reaching LoginPage again requires going through the logout
-    // flow. TC-E2E-09 and TC-E2E-10 cover the post-login scenarios explicitly.
-
-    await goHome();
-
-    await tester.tap(find.byKey(const Key('home_login_button')));
-    await waitFor(find.byType(LoginPage));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-    await tester.tap(find.byKey(const Key('login_create_account_button')));
-    await waitFor(find.byType(RegisterPage));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-    await tester.tap(find.byKey(const Key('register_cancel_button')));
-    await waitFor(find.byType(LoginPage));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-    expect(find.byType(LoginPage), findsOneWidget);
-    expect(find.byType(RegisterPage), findsNothing);
-
-    // =========================================================================
-    // TC-E2E-07 — Full login flow (real backend)
-    // =========================================================================
-
-    await goHome();
-
-    await tester.tap(find.byKey(const Key('home_login_button')));
-    await waitFor(find.byType(LoginPage));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-    // Use the account created in TC-E2E-05 (same testEmail, same run).
-    await tester.enterText(find.byType(TextFormField).at(0), testEmail);
-    await tester.enterText(find.byType(TextFormField).at(1), testPassword);
-
-    await tester.tap(find.byKey(const Key('login_submit_button')));
-
-    // Wait for authentication and GoRouter redirect to HomePage.
+    // Wait for the backend call, auto-login dispatch, and GoRouter redirect.
     await waitFor(
       find.byType(HomePage),
       timeout: const Duration(seconds: 20),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
+    // Registration auto-login: must land on HomePage, not LoginPage.
     expect(find.byType(HomePage), findsOneWidget);
+    expect(find.byType(RegisterPage), findsNothing);
+    expect(find.byType(LoginPage), findsNothing);
 
-    // After authentication the AppBar action must show 'Profil'.
+    // Session must be active immediately after registration.
     expect(
       find.byKey(const Key('home_profile_button')),
       findsOneWidget,
-      reason: 'Authenticated state must expose the Profil action.',
+      reason:
+      'Auto-login must establish an authenticated session; '
+          'the AppBar action must show Profil, not Connexion.',
     );
     expect(find.text('Profil'), findsOneWidget);
-
-    // Both private-group actions must be visible for authenticated users.
-    expect(
-      find.byKey(const Key('home_create_private_button')),
-      findsOneWidget,
-      reason: 'The create-private-group action must appear when authenticated.',
-    );
-    expect(
-      find.byKey(const Key('home_join_private_button')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('home_create_private_button')), findsOneWidget);
 
     // =========================================================================
     // TC-E2E-09 — Navigate to ProfilePage and verify user information
     // =========================================================================
     //
-    // Prerequisite: an authenticated session established in TC-E2E-07.
-    //
-    // Verifies that:
-    //   1. Tapping "Profil" in the AppBar navigates to [ProfilePage].
-    //   2. The display name registered in TC-E2E-05 is visible.
-    //   3. The email registered in TC-E2E-05 is visible.
-    //   4. The role badge and member-since date are rendered.
-    //   5. The logout button is present and enabled.
-    //   6. The back button is present.
+    // Prerequisite: authenticated session established in TC-E2E-05.
 
     await goHome();
 
@@ -343,67 +294,46 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
     expect(find.byType(ProfilePage), findsOneWidget);
-
-    // The display name set during registration must appear.
     expect(find.byKey(const Key('profile_display_name')), findsOneWidget);
     expect(find.text(testUsername), findsOneWidget);
-
-    // The email set during registration must appear.
     expect(find.byKey(const Key('profile_email')), findsOneWidget);
     expect(find.text(testEmail), findsOneWidget);
-
-    // Role badge and member-since date must be rendered.
     expect(find.byKey(const Key('profile_role_badge')), findsOneWidget);
     expect(find.byKey(const Key('profile_member_since')), findsOneWidget);
 
-    // The logout button must be present and enabled.
-    final logoutButtonBeforeLogout = tester.widget<FilledButton>(
+    final logoutButton = tester.widget<FilledButton>(
       find.byKey(const Key('profile_logout_button')),
     );
     expect(
-      logoutButtonBeforeLogout.onPressed,
+      logoutButton.onPressed,
       isNotNull,
       reason: 'Logout button must be enabled when no operation is in progress.',
     );
 
-    // Back navigation must be available.
     expect(find.byKey(const Key('profile_back_button')), findsOneWidget);
 
-    // Tapping the back button returns to HomePage without altering auth state.
+    // Back navigation preserves the active session.
     await tester.tap(find.byKey(const Key('profile_back_button')));
     await waitFor(find.byType(HomePage));
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(ProfilePage), findsNothing);
-    // Session must still be active after back navigation.
     expect(find.byKey(const Key('home_profile_button')), findsOneWidget);
 
     // =========================================================================
     // TC-E2E-10 — Logout from ProfilePage returns to unauthenticated HomePage
     // =========================================================================
     //
-    // Prerequisite: authenticated session from TC-E2E-07, back on HomePage
+    // Prerequisite: authenticated session from TC-E2E-05, back on HomePage
     //               after TC-E2E-09.
-    //
-    // Verifies that:
-    //   1. Tapping "Se déconnecter" sends POST /auth/logout to the backend.
-    //   2. [AuthBloc] transitions to [AuthUnauthenticated].
-    //   3. [ProfilePage] navigates to "/" via context.go('/').
-    //   4. [HomePage] renders the unauthenticated layout:
-    //        - AppBar action is "Connexion".
-    //        - "Créer un groupe privé" is no longer visible.
-    //        - "Rejoindre un groupe privé" is still visible.
 
     await tester.tap(find.byKey(const Key('home_profile_button')));
     await waitFor(find.byType(ProfilePage));
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-    expect(find.byType(ProfilePage), findsOneWidget);
-
     await tester.tap(find.byKey(const Key('profile_logout_button')));
 
-    // Wait for the backend POST /auth/logout and AuthBloc state transition.
     await waitFor(
       find.byType(HomePage),
       timeout: const Duration(seconds: 20),
@@ -412,28 +342,51 @@ void main() {
 
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(ProfilePage), findsNothing);
-
-    // AppBar action must revert to "Connexion".
     expect(
       find.byKey(const Key('home_login_button')),
       findsOneWidget,
       reason:
       'After logout the AppBar action must revert to the Connexion button.',
     );
-    expect(find.text('Connexion'), findsOneWidget);
+    expect(find.byKey(const Key('home_create_private_button')), findsNothing);
+    expect(find.byKey(const Key('home_join_private_button')), findsOneWidget);
 
-    // "Créer un groupe privé" must disappear after logout.
-    expect(
-      find.byKey(const Key('home_create_private_button')),
-      findsNothing,
-      reason:
-      'The create-private-group action must disappear after logout.',
+    // =========================================================================
+    // TC-E2E-07 — Full login flow (real backend)
+    // =========================================================================
+    //
+    // Prerequisite: unauthenticated state restored by TC-E2E-10 (logout).
+    // Uses the account created during TC-E2E-05 (same testEmail / testPassword).
+    //
+    // TC-E2E-07 now executes last so that the unauthenticated state produced
+    // by TC-E2E-10 provides direct access to [LoginPage] via the Connexion
+    // button, without requiring an additional logout step.
+
+    await goHome();
+
+    await tester.tap(find.byKey(const Key('home_login_button')));
+    await waitFor(find.byType(LoginPage));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    await tester.enterText(find.byType(TextFormField).at(0), testEmail);
+    await tester.enterText(find.byType(TextFormField).at(1), testPassword);
+
+    await tester.tap(find.byKey(const Key('login_submit_button')));
+
+    await waitFor(
+      find.byType(HomePage),
+      timeout: const Duration(seconds: 20),
     );
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-    // "Rejoindre un groupe privé" is always visible regardless of auth state.
+    expect(find.byType(HomePage), findsOneWidget);
     expect(
-      find.byKey(const Key('home_join_private_button')),
+      find.byKey(const Key('home_profile_button')),
       findsOneWidget,
+      reason: 'Authenticated state must expose the Profil action.',
     );
+    expect(find.text('Profil'), findsOneWidget);
+    expect(find.byKey(const Key('home_create_private_button')), findsOneWidget);
+    expect(find.byKey(const Key('home_join_private_button')), findsOneWidget);
   });
 }

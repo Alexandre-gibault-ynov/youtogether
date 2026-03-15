@@ -10,22 +10,14 @@ import '../../../room/domain/entities/room_entity.dart';
 
 /// Home screen — public room listing.
 ///
-/// Layout (top to bottom, matching wireframe):
+/// Layout (top to bottom):
 ///   AppBar "YouTogether" + action [Connexion | Profil]
-///   ─ tagline "Regardez des vidéos YouTube ensemble en temps réel"
-///   ─ "GROUPES PUBLICS" section heading
-///   ─ scrollable list of [_RoomCard] items (name + member count)
-///   ─ persistent bottom bar, which adapts to auth state:
-///       • Authenticated   → "Créer un groupe privé" (top) +
-///                           "Rejoindre un groupe privé" (bottom)
+///   ─ tagline
+///   ─ section heading
+///   ─ scrollable list of [_RoomCard] (Expanded — fills remaining space)
+///   ─ private-group action buttons (in body, not in bottomNavigationBar):
+///       • Authenticated   → "Créer un groupe privé" + "Rejoindre un groupe privé"
 ///       • Unauthenticated → "Rejoindre un groupe privé" only
-///
-/// The AppBar trailing action adapts to [AuthBloc] state:
-///   - [AuthUnauthenticated] → "Connexion" → navigates to [LoginPage]
-///   - [AuthAuthenticated]   → "Profil"    → navigates to [ProfilePage]
-///
-/// The room list is provided via constructor for now; it will be driven by
-/// [RoomBloc] once that feature is integrated.
 class HomePage extends StatelessWidget {
   const HomePage({
     super.key,
@@ -66,59 +58,62 @@ class HomePage extends StatelessWidget {
           child: Divider(height: 1),
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Tagline ──────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            child: Text(
-              'Regardez des vidéos YouTube\nensemble en temps réel',
-              style: AppTheme.body.copyWith(
-                fontSize: 17,
-                height: 1.4,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Tagline ────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: Text(
+                'Regardez des vidéos YouTube\nensemble en temps réel',
+                style: AppTheme.body.copyWith(fontSize: 17, height: 1.4),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // ── Section heading ──────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Groupes publics',
-              textAlign: TextAlign.center,
-              style: AppTheme.sectionHeading,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // ── Room list ────────────────────────────────────────────────────
-          Expanded(
-            child: rooms.isEmpty
-                ? _buildEmptyState()
-                : ListView.separated(
+            // ── Section heading ────────────────────────────────────────────
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: rooms.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                return _RoomCard(room: rooms[index]);
+              child: Text(
+                'Groupes publics',
+                textAlign: TextAlign.center,
+                style: AppTheme.sectionHeading,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Room list ──────────────────────────────────────────────────
+            Expanded(
+              child: rooms.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: rooms.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) =>
+                    _RoomCard(room: rooms[index]),
+              ),
+            ),
+
+            // ── Private-group action buttons ───────────────────────────────
+            //
+            // Positioned inside the body (not in Scaffold.bottomNavigationBar)
+            // to avoid overlap with the Android gesture navigation bar.
+            // Buttons are centered with horizontal padding so they do not
+            // span the full screen width, matching the wireframe layout.
+            BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                final isAuthenticated = state is AuthAuthenticated;
+                return _PrivateGroupActions(
+                  isAuthenticated: isAuthenticated,
+                  onCreatePrivate: () => _onCreatePrivate(context),
+                  onJoinPrivate: () => _onJoinPrivate(context),
+                );
               },
             ),
-          ),
-        ],
-      ),
-
-      // ── Bottom bar — adapts to authentication state ──────────────────────
-      bottomNavigationBar: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          final isAuthenticated = state is AuthAuthenticated;
-          return _BottomActionBar(
-            isAuthenticated: isAuthenticated,
-            onCreatePrivate: () => _onCreatePrivate(context),
-            onJoinPrivate: () => _onJoinPrivate(context),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -147,12 +142,10 @@ class HomePage extends StatelessWidget {
 
   void _onCreatePrivate(BuildContext context) {
     // Navigate to private room creation screen (route to be defined).
-    // create-private route — to be defined
   }
 
   void _onJoinPrivate(BuildContext context) {
     // Navigate to private room join screen (route to be defined).
-    // join-private route — to be defined
   }
 }
 
@@ -221,23 +214,20 @@ class _RoomCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Bottom action bar
+// Private group action buttons
 // ---------------------------------------------------------------------------
 
-/// Persistent bottom action bar that adapts to the user's authentication state.
+/// Section displayed below the room list for private-group actions.
 ///
-/// Authenticated layout (top to bottom):
-///   ─ "Créer un groupe privé"     (key: home_create_private_button)
-///   ─ border
-///   ─ "Rejoindre un groupe privé" (key: home_join_private_button)
+/// The buttons are rendered as [OutlinedButton] with a constrained max width
+/// and horizontal margin so they do not span the full screen width, in
+/// accordance with the wireframe layout.
 ///
-/// Unauthenticated layout:
-///   ─ "Rejoindre un groupe privé" only
-///
-/// Both rows maintain a fixed height of 56px, consistent with the original
-/// single-row layout.
-class _BottomActionBar extends StatelessWidget {
-  const _BottomActionBar({
+/// A top [Divider] visually separates this section from the room list.
+/// Bottom padding is driven by [SafeArea] (applied on the parent [body])
+/// so the buttons remain above the Android gesture navigation bar.
+class _PrivateGroupActions extends StatelessWidget {
+  const _PrivateGroupActions({
     required this.isAuthenticated,
     required this.onCreatePrivate,
     required this.onJoinPrivate,
@@ -249,79 +239,77 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.cardDark,
-          border: Border(
-            top: BorderSide(color: AppTheme.borderDark),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Divider(height: 1, color: AppTheme.borderDark),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // "Créer un groupe privé" — authenticated only.
+              if (isAuthenticated) ...[
+                _ActionButton(
+                  key: const Key('home_create_private_button'),
+                  label: 'Créer un groupe privé',
+                  onTap: onCreatePrivate,
+                  color: AppTheme.accent,
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              // "Rejoindre un groupe privé" — always visible.
+              _ActionButton(
+                key: const Key('home_join_private_button'),
+                label: 'Rejoindre un groupe privé',
+                onTap: onJoinPrivate,
+                color: AppTheme.textSecondary,
+              ),
+            ],
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // "Créer un groupe privé" — visible only when authenticated.
-            if (isAuthenticated) ...[
-              _BarItem(
-                key: const Key('home_create_private_button'),
-                label: 'Créer un groupe privé',
-                onTap: onCreatePrivate,
-                style: _BarItemStyle.accent,
-              ),
-              const Divider(height: 1, color: AppTheme.borderDark),
-            ],
-
-            // "Rejoindre un groupe privé" — always visible.
-            _BarItem(
-              key: const Key('home_join_private_button'),
-              label: 'Rejoindre un groupe privé',
-              onTap: onJoinPrivate,
-              style: _BarItemStyle.muted,
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Bar item
-// ---------------------------------------------------------------------------
-
-enum _BarItemStyle { accent, muted }
-
-class _BarItem extends StatelessWidget {
-  const _BarItem({
+/// A single action button in the private-group section.
+///
+/// Rendered as an [OutlinedButton] at full width within its parent padding,
+/// which already constrains the visual width away from the screen edges.
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
     super.key,
     required this.label,
     required this.onTap,
-    required this.style,
+    required this.color,
   });
 
   final String label;
   final VoidCallback onTap;
-  final _BarItemStyle style;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final color = style == _BarItemStyle.accent
-        ? AppTheme.accent
-        : AppTheme.textSecondary;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        height: 56,
-        child: Center(
-          child: Text(
-            label,
-            style: AppTheme.body.copyWith(
-              color: color,
-              fontWeight: style == _BarItemStyle.accent
-                  ? FontWeight.w500
-                  : FontWeight.w400,
-            ),
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          side: BorderSide(color: color.withValues(alpha: 0.4)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: color,
           ),
         ),
       ),
