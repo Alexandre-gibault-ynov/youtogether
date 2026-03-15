@@ -1,5 +1,5 @@
-import '../model/token_model.dart';
-import '../model/user_model.dart';
+import '../models/token_model.dart';
+import '../models/user_model.dart';
 
 /// Data source interface for remote authentication operations via the
 /// backend REST API.
@@ -8,7 +8,7 @@ import '../model/user_model.dart';
 /// ([ServerException], [NetworkException], [AuthException]) on failure.
 /// No [Failure] objects are returned here; exception-to-failure conversion
 /// is the repository's responsibility.
-abstract class IAuthRemoteDatasource {
+abstract class IAuthRemoteDataSource {
   /// POST /auth/register
   ///
   /// Creates a new user account with [email], [password] and [username].

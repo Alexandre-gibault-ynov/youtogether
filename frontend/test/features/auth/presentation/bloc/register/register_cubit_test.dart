@@ -74,12 +74,11 @@ void main() {
 
   group('RegisterCubit — register', () {
     blocTest<RegisterCubit, RegisterState>(
-      'emits [loading, success] when RegisterUseCase returns Right(UserEntity)',
+      'emits [loading, success(user)] when RegisterUseCase returns Right(UserEntity)',
       build: buildCubit,
       setUp: () {
-        when(
-          () => mockRegisterUseCase(any()),
-        ).thenAnswer((_) async => Right(_tUserEntity));
+        when(() => mockRegisterUseCase(any()))
+            .thenAnswer((_) async => Right(_tUserEntity));
       },
       act: (cubit) => cubit.register(
         email: _tEmail,
@@ -88,21 +87,42 @@ void main() {
       ),
       expect: () => [
         const RegisterState.loading(),
-        const RegisterState.success(),
+        // success now carries the UserEntity so RegisterPage can dispatch
+        // AuthEvent.userSessionEstablished without a second network call.
+        RegisterState.success(user: _tUserEntity),
       ],
       verify: (_) {
         verify(() => mockRegisterUseCase(any())).called(1);
       },
     );
 
-    // Email already in use — HTTP 409 mapped to ValidationFailure
+    // success.user must be the entity returned by the use case.
+    blocTest<RegisterCubit, RegisterState>(
+      'success state carries the UserEntity returned by RegisterUseCase',
+      build: buildCubit,
+      setUp: () {
+        when(() => mockRegisterUseCase(any()))
+            .thenAnswer((_) async => Right(_tUserEntity));
+      },
+      act: (cubit) => cubit.register(
+        email: _tEmail,
+        password: _tPassword,
+        username: _tUsername,
+      ),
+      verify: (cubit) {
+        final state = cubit.state;
+        expect(state, isA<RegisterSuccess>());
+        expect((state as RegisterSuccess).user, equals(_tUserEntity));
+      },
+    );
+
+    // Email already in use — HTTP 409 mapped to ValidationFailure.
     blocTest<RegisterCubit, RegisterState>(
       'emits [loading, failure] when RegisterUseCase returns ValidationFailure',
       build: buildCubit,
       setUp: () {
-        when(
-          () => mockRegisterUseCase(any()),
-        ).thenAnswer((_) async => const Left(_tValidationFailure));
+        when(() => mockRegisterUseCase(any()))
+            .thenAnswer((_) async => const Left(_tValidationFailure));
       },
       act: (cubit) => cubit.register(
         email: _tEmail,
@@ -115,14 +135,13 @@ void main() {
       ],
     );
 
-    // Network unavailable
+    // Network unavailable.
     blocTest<RegisterCubit, RegisterState>(
       'emits [loading, failure] when RegisterUseCase returns NetworkFailure',
       build: buildCubit,
       setUp: () {
-        when(
-          () => mockRegisterUseCase(any()),
-        ).thenAnswer((_) async => const Left(_tNetworkFailure));
+        when(() => mockRegisterUseCase(any()))
+            .thenAnswer((_) async => const Left(_tNetworkFailure));
       },
       act: (cubit) => cubit.register(
         email: _tEmail,
@@ -135,14 +154,13 @@ void main() {
       ],
     );
 
-    // Correct params propagation
+    // Correct params propagation.
     blocTest<RegisterCubit, RegisterState>(
       'calls RegisterUseCase with the exact RegisterParams provided',
       build: buildCubit,
       setUp: () {
-        when(
-          () => mockRegisterUseCase(any()),
-        ).thenAnswer((_) async => Right(_tUserEntity));
+        when(() => mockRegisterUseCase(any()))
+            .thenAnswer((_) async => Right(_tUserEntity));
       },
       act: (cubit) => cubit.register(
         email: _tEmail,
@@ -151,7 +169,7 @@ void main() {
       ),
       verify: (_) {
         verify(
-          () => mockRegisterUseCase(
+              () => mockRegisterUseCase(
             const RegisterParams(
               email: _tEmail,
               password: _tPassword,
@@ -179,7 +197,7 @@ void main() {
     blocTest<RegisterCubit, RegisterState>(
       'emits [initial] when reset() is called after success',
       build: buildCubit,
-      seed: () => const RegisterState.success(),
+      seed: () => RegisterState.success(user: _tUserEntity),
       act: (cubit) => cubit.reset(),
       expect: () => [const RegisterState.initial()],
     );

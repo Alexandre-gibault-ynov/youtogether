@@ -40,7 +40,7 @@ class RegisterCubit extends Cubit<RegisterState> {
 
     result.fold(
       (failure) => emit(RegisterState.failure(failure: failure)),
-      (_) => emit(const RegisterState.success()),
+      (user) => emit(RegisterState.success(user: user)),
     );
   }
 

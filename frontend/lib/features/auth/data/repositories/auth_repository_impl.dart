@@ -1,8 +1,8 @@
 import 'package:either_dart/either.dart';
 import 'package:youtogether/core/error/exceptions.dart';
-import 'package:youtogether/features/auth/data/datasources/i_auth_local_datasource.dart';
-import 'package:youtogether/features/auth/data/datasources/i_auth_remote_datasource.dart';
-import 'package:youtogether/features/auth/data/model/user_model.dart';
+import 'package:youtogether/features/auth/data/datasources/i_auth_local_data_source.dart';
+import 'package:youtogether/features/auth/data/datasources/i_auth_remote_data_source.dart';
+import 'package:youtogether/features/auth/data/models/user_model.dart';
 import 'package:youtogether/features/auth/domain/repositories/i_auth_repository.dart';
 
 import '../../../../core/error/failures.dart';
@@ -23,15 +23,14 @@ import '../../domain/entities/user_entity.dart';
 /// No exception propagates beyond this class; all errors are returned as
 /// [Left<Failure, T>] values.
 class AuthRepositoryImpl implements IAuthRepository {
-  final IAuthRemoteDatasource _remoteDatasource;
-  final IAuthLocalDatasource _localDatasource;
+  final IAuthRemoteDataSource _remoteDatasource;
+  final IAuthLocalDataSource _localDatasource;
 
   const AuthRepositoryImpl({
-    required IAuthRemoteDatasource remoteDataSource,
-    required IAuthLocalDatasource localDataSource,
+    required IAuthRemoteDataSource remoteDataSource,
+    required IAuthLocalDataSource localDataSource,
   }) : _remoteDatasource = remoteDataSource,
        _localDatasource = localDataSource;
-
   @override
   Future<Either<Failure, UserEntity>> register({
     required String email,

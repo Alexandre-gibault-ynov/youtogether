@@ -1,20 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_theme.dart';
 import '../../../../core/error/failures.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../bloc/auth/auth_event.dart';
 import '../bloc/register/register_cubit.dart';
 import '../bloc/register/register_state.dart';
 
-/// Account creation screen.
+/// Account creation screen — "Création de compte".
 ///
-/// Managed by [RegisterCubit]. On [RegisterState.success] the screen pops
-/// and the router / [AuthBloc] handles the subsequent navigation flow.
+/// On [RegisterState.success], this page dispatches
+/// [AuthEvent.userSessionEstablished] to [AuthBloc] (available via the
+/// ancestor [BlocProvider] declared in [app.dart]), which immediately
+/// transitions the application to [AuthState.authenticated]. GoRouter then
+/// redirects to [AppRoutes.homePage] via the [refreshListenable] mechanism,
+/// so no explicit navigation call is needed here.
+///
+/// The complete post-registration flow is therefore:
+///   RegisterCubit.success → AuthBloc.userSessionEstablished
+///     → AuthState.authenticated → GoRouter redirects to /
+///
+/// [RegisterCubit] is provided by a [BlocProvider] scoped to this route,
+/// declared in [app_router.dart].
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
-
-  /// Name route identifier.
-  static const routeName = '/register';
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -22,8 +33,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _obscurePassword = true;
@@ -31,45 +42,51 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
     _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
   // Actions
+  // ---------------------------------------------------------------------------
 
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<RegisterCubit>().register(
-        username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        username: _usernameController.text.trim(),
       );
     }
   }
 
   void _onCancel() {
     context.read<RegisterCubit>().reset();
-    Navigator.of(context).maybePop();
+    if (context.canPop()) context.pop();
   }
 
+  // ---------------------------------------------------------------------------
   // Failure display
+  // ---------------------------------------------------------------------------
 
   String _failureMessage(Failure failure) {
     return switch (failure) {
       AuthFailure(:final message) => message,
       NetworkFailure() =>
-        'Aucune connexion Internet. Vérifiez votre réseau et réessayez.',
+      'Aucune connexion Internet. Vérifiez votre réseau et réessayez.',
       ServerFailure(:final statusCode) =>
-        'Erreur serveur ($statusCode). Veuillez réessayer plus tard.',
+      'Erreur serveur ($statusCode). Veuillez réessayer plus tard.',
       ValidationFailure(:final errors) => errors.values.join('\n'),
       _ => 'Une erreur inattendue est survenue. Veuillez réessayer.',
     };
   }
 
+  // ---------------------------------------------------------------------------
   // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -85,9 +102,13 @@ class _RegisterPageState extends State<RegisterPage> {
       body: BlocListener<RegisterCubit, RegisterState>(
         listener: (context, state) {
           if (state is RegisterSuccess) {
-            // Registration succeeded — pop back to login.
-            // The router / AuthBloc will handle subsequent navigation.
-            Navigator.of(context).maybePop();
+            // Dispatch the user to AuthBloc so the app transitions to
+            // AuthState.authenticated without a redundant network call.
+            // GoRouter's refreshListenable picks up the state change and
+            // redirects to / automatically.
+            context.read<AuthBloc>().add(
+              AuthEvent.userSessionEstablished(user: state.user),
+            );
           } else if (state is RegisterFailureState) {
             ScaffoldMessenger.of(context)
               ..clearSnackBars()
@@ -112,10 +133,9 @@ class _RegisterPageState extends State<RegisterPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Vertical spacer
                   const Spacer(flex: 3),
 
-                  // Heading
+                  // ── Heading ──────────────────────────────────────────────
                   Text(
                     'Création de compte',
                     textAlign: TextAlign.center,
@@ -123,32 +143,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Username field
+                  // ── Email ─────────────────────────────────────────────────
                   TextFormField(
-                    controller: _usernameController,
-                    keyboardType: TextInputType.text,
-                    textInputAction: TextInputAction.next,
-                    autocorrect: false,
-                    style: AppTheme.body,
-                    decoration: const InputDecoration(
-                      hintText: "nom d'utilisateur",
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return "Le nom d'utilisateur est requis.";
-                      }
-                      if (value.trim().length < 3) {
-                        return "Le nom d'utilisateur doit contenir au moins 3 caractères.";
-                      }
-                      if (value.trim().length > 50) {
-                        return "Le nom d'utilisateur ne peut pas dépasser 50 caractères.";
-                      }
-                      return null;
-                    },
-                  ),
-
-                  // Email field
-                  TextFormField(
+                    key: const Key('register_email_field'),
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
@@ -171,8 +168,34 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Password field
+                  // ── Username ──────────────────────────────────────────────
                   TextFormField(
+                    key: const Key('register_username_field'),
+                    controller: _usernameController,
+                    keyboardType: TextInputType.text,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    style: AppTheme.body,
+                    decoration:
+                    const InputDecoration(hintText: "nom d'utilisateur"),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Le nom d'utilisateur est requis.";
+                      }
+                      if (value.trim().length < 3) {
+                        return "Le nom d'utilisateur doit contenir au moins 3 caractères.";
+                      }
+                      if (value.trim().length > 50) {
+                        return "Le nom d'utilisateur ne peut pas dépasser 50 caractères.";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+
+                  // ── Password ──────────────────────────────────────────────
+                  TextFormField(
+                    key: const Key('register_password_field'),
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.next,
@@ -192,7 +215,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ? 'Afficher le mot de passe'
                             : 'Masquer le mot de passe',
                         onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                              () => _obscurePassword = !_obscurePassword,
                         ),
                       ),
                     ),
@@ -208,8 +231,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Confirm password Field
+                  // ── Confirm password ──────────────────────────────────────
                   TextFormField(
+                    key: const Key('register_confirm_field'),
                     controller: _confirmController,
                     obscureText: _obscureConfirm,
                     textInputAction: TextInputAction.done,
@@ -229,8 +253,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         tooltip: _obscureConfirm
                             ? 'Afficher le mot de passe'
                             : 'Masquer le mot de passe',
-                        onPressed: () =>
-                            setState(() => _obscureConfirm = !_obscureConfirm),
+                        onPressed: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm,
+                        ),
                       ),
                     ),
                     validator: (value) {
@@ -245,37 +270,38 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Create account button
+                  // ── Créer le compte ───────────────────────────────────────
                   BlocBuilder<RegisterCubit, RegisterState>(
                     builder: (context, state) {
                       final isLoading = state is RegisterLoading;
                       return FilledButton(
+                        key: const Key('register_submit_button'),
                         onPressed: isLoading ? null : _onSubmit,
                         child: isLoading
                             ? const SizedBox.square(
-                                dimension: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white70,
-                                ),
-                              )
+                          dimension: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white70,
+                          ),
+                        )
                             : const Text('Créer le compte'),
                       );
                     },
                   ),
                   const SizedBox(height: 10),
 
-                  // Cancel button
+                  // ── Annuler ───────────────────────────────────────────────
                   BlocBuilder<RegisterCubit, RegisterState>(
                     builder: (context, state) {
                       return OutlinedButton(
+                        key: const Key('register_cancel_button'),
                         onPressed: state is RegisterLoading ? null : _onCancel,
                         child: const Text('Annuler'),
                       );
                     },
                   ),
 
-                  // Bottom spacer
                   const Spacer(flex: 2),
                 ],
               ),
