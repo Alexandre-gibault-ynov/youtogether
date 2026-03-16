@@ -5,9 +5,9 @@ YouTogether: watch YouTube videos together.
 
 To run the project on local environment:
 1. Clone this repository
-2. go to the backend repository:
+2. go to the sql directory in backend repository:
    ```bash
-   cd backend/
+   cd backend/sql
    ```
 3. Install [PostgreSQL](https://www.postgresql.org/)
 4. Create the database:
